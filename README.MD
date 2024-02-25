@@ -25,7 +25,23 @@ Include the `OpenMenuOS.h` header file in your sketch to access the OpenMenuOS f
 
 ### Initialization
 
-Create an instance of the `OpenMenuOS` class, specifying the button and display pins, along with menu item names and optional icons.
+To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, SELECT), TFT backlight pin, and display control pins (CS, DC, RST). Additionally, provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
+
+Example:
+```
+OpenMenuOS(
+  Button UP Pin,
+  Button SELECT Pin,
+  TFT Backlight Pin,
+  Display CS Pin,
+  Display DC Pin,
+  Display RST Pin,
+  Name of the item separated by a comma (You can go up to 20),
+  NULL
+)
+```
+
+Example Use: 'OpenMenuOS menu(10, 5, 12, 4, 21, 22, "Flashlight", "Profile", "Heat", "Reflow", "Settings", "Wifi", "Package", "Survival", "Other", NULL);'
 
 ### Usage
 
