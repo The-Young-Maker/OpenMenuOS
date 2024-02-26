@@ -81,11 +81,13 @@ int getSelectedItem() const: Returns the index of the selected menu item.
 
 OpenMenuOS supports menu icons to enhance the visual presentation of menu items. Icons should be provided as 16x16 pixel bitmaps and stored in an `images.h` file. Define each icon as a constant array of bytes.
 
+For the images, you can use [LVGL Image Converter](https://lvgl.io/tools/imageconverter) and in the "Color Format" section, choose "CF_RGB565A8".
+
 ### Additional Images
 
 In addition to menu icons, OpenMenuOS allows for the integration of custom images or icons beyond menu items. These images can be used for boot screens, splash screens, or other graphical elements. Store additional images in the `images.h` file as constant arrays of bytes.
 
 
 ## Additional Notes
-The library is still in beta. If you encounter any bugs, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
+The library is still in beta. If you encounter any bugs or if you have suggestion, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
 Ensure that you have the necessary dependencies installed and configured in your Arduino IDE.
