@@ -83,7 +83,6 @@ char menu_items_settings[MAX_SETTINGS_ITEMS][MAX_ITEM_LENGTH] = {
   { "OTA" },
 };
 
-
 bool OpenMenuOS::menu_items_settings_bool[MAX_SETTINGS_ITEMS] = {
   true,   // Wifi
   false,  // Open Wifi
@@ -123,6 +122,9 @@ void OpenMenuOS::begin() {
   tft.initR(INITR_GREENTAB);
   tft.setRotation(3);
   canvas.fillScreen(ST7735_BLACK);
+
+  // Show The Boot image
+  tft.drawRGBBitmap(0, 0, (uint16_t*)Boot_img, 160, 80);
 
   // Initialize EEPROM
   prefs.begin("Settings");  //namespace
