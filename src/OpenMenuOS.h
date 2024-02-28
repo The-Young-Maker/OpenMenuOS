@@ -21,7 +21,7 @@ public:
   static bool menu_items_settings_bool[];
   GFXcanvas16 canvas;
 
-  OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst, const char* names...);  // BTN_UP pin, BTN_SEL pin, CS pin, DC pin, RST pin, Menu Items
+  OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst);  // BTN_UP pin, BTN_SEL pin, CS pin, DC pin, RST pin, Menu Items
 
   void begin();
   void loop();
@@ -29,22 +29,29 @@ public:
   void checkSerial();
   void connectToWiFi();
   void connectToStrongestOpenWiFi();
-  void drawMenu();
+  void drawMenu(bool images, const char* names...);
+  void drawSubmenu(bool images, const char* names...);
   void drawSettingMenu(const char* items...);
+  void drawTileMenu(int rows, int columns, int tile_color);
   void printMenuToSerial();
   void checkForButtonPress();
+  void checkForButtonPressSubmenu();
   void drawCanvasOnTFT();
   void saveToEEPROM();
   void readFromEEPROM();
 
   int getCurrentScreen() const;  // Getter method for current_screen
+  int getCurrentScreenTileMenu() const;  // Getter method for current_screen
   int getSelectedItem() const;   // Getter method for item_selected
+  int getSelectedItemTileMenu() const;   // Getter method for item_selected
 private:
   Adafruit_ST7735 tft;
   Preferences prefs;
 
   char menu_items[MAX_MENU_ITEMS][MAX_ITEM_LENGTH];
+  char submenu_items[MAX_MENU_ITEMS][MAX_ITEM_LENGTH];
   int NUM_MENU_ITEMS;
+  int NUM_SUBMENU_ITEMS;
   int current_screen;
 };
 

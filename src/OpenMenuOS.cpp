@@ -4,7 +4,6 @@
   Released into the public domain.
 */
 
-
 #pragma message "The OpenMenuOS library is still in Beta. If you find any bug, please create an issue on the OpenMenuOS's Github repository"
 
 #include "Arduino.h"
@@ -30,6 +29,12 @@
 int tftWidth = 160;
 int tftHeight = 80;
 
+// Tile menu variable
+int current_screen_tile_menu = 0;
+int item_selected_tile_menu = 2;
+int tile_menu_selection_X = 0;
+int tile_menu_selection_Y = 0;
+
 // Rectangle dimensions
 const uint16_t rect_width = 155;  // Width of the selection rectangle
 const uint16_t rect_height = 26;  // Height of the selection rectangle
@@ -40,11 +45,15 @@ int item_sel_previous;  // Previous item - used in the menu screen to draw the i
 int item_selected;      // Current item -  used in the menu screen to draw the selected item
 int item_sel_next;      // Next item - used in the menu screen to draw next item after the selected one
 
+// Submenu Item Positioning Variables
+int item_sel_previous_submenu;  // Previous item - used in the submenu screen to draw the item before the selected one
+int item_selected_submenu;      // Current item -  used in the submenu screen to draw the selected item
+int item_sel_next_submenu;      // Next item - used in the submenu screen to draw next item after the selected one
+
 // Settings Item Positioning Variables
 int item_selected_settings_previous;  // Previous item - used in the menu screen to draw the item before the selected one
 int item_selected_settings = 0;       // Current item -  used in the menu screen to draw the selected item
 int item_selected_settings_next;      // Next item - used in the menu screen to draw next item after the selected one
-
 // Wi-Fi Credentials
 String ssid1;      // SSID of the first WiFi network
 String password1;  // Password of the first WiFi network
@@ -53,7 +62,8 @@ String password2;  // Password of the second WiFi network
 
 // Button Press Timing and Control
 unsigned long select_button_press_time = 0;
-int button_up_clicked = 0;           // Only perform action when the button is clicked, and wait until another press
+int button_up_clicked = 0;  // Only perform action when the button is clicked, and wait until another press
+int button_up_clicked_tile = 0;
 int button_up_clicked_settings = 0;  // Only perform action when the button is clicked, and wait until another press
 int button_select_clicked = 0;
 bool previousButtonState = LOW;
@@ -97,25 +107,15 @@ bool OpenMenuOS::menu_items_settings_bool[MAX_SETTINGS_ITEMS] = {
 };
 
 
-OpenMenuOS::OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst, const char* names...)
+OpenMenuOS::OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst)
   : tft(cs, dc, rst), canvas(160, 80) {
   BUTTON_UP_PIN = btn_up;
   BUTTON_SELECT_PIN = btn_sel;
   TFT_BL_PIN = tft_bl;
-  NUM_MENU_ITEMS = 0;
-  va_list args;
-  va_start(args, names);
-  const char* name = names;
-  while (name != NULL) {
-    strncpy(menu_items[NUM_MENU_ITEMS], name, MAX_ITEM_LENGTH);
-    name = va_arg(args, const char*);
-    NUM_MENU_ITEMS++;
-  }
-  va_end(args);
 }
 
 void OpenMenuOS::begin() {
-  item_selected = 3;
+  item_selected = 0;
   current_screen = 0;  // 0 = Menu, 1 = Submenu
 
   // Set up display
@@ -157,6 +157,7 @@ void OpenMenuOS::loop() {
   // checkSerial();
   // connectToWiFi();
   checkForButtonPress();
+  checkForButtonPressSubmenu();
 }
 
 void OpenMenuOS::checkSerial() {
@@ -328,7 +329,22 @@ void OpenMenuOS::connectToStrongestOpenWiFi() {
     Serial.println("No open Wi-Fi networks found");
   }
 }
-void OpenMenuOS::drawMenu() {
+void OpenMenuOS::drawMenu(bool images, const char* names...) {
+  NUM_MENU_ITEMS = 0;
+  va_list args;
+  va_start(args, names);
+  const char* name = names;
+  // Clear the menu_items array before putting in new values
+  memset(menu_items, 0, sizeof(menu_items));
+  while (name != NULL) {
+    strncpy(menu_items[NUM_MENU_ITEMS], name, MAX_ITEM_LENGTH);
+    name = va_arg(args, const char*);
+    NUM_MENU_ITEMS++;
+  }
+  va_end(args);
+
+  checkForButtonPress();  // Check for button presses to control the menu
+
   // Calculate the position of the rectangle
   uint16_t rect_x = (tftWidth - rect_width - 4) / 2;                               // Center the rectangle horizontally with a 4-pixel space on the right
   uint16_t rect_y = (tftHeight - rect_height) / 2;                                 // Center the rectangle vertically
@@ -336,14 +352,14 @@ void OpenMenuOS::drawMenu() {
   canvas.drawFastHLine(3, 51, 150, ST7735_WHITE);                                  // Display the Shadow
   canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, ST7735_WHITE);  // Display the rectangle
 
-  int xPos = 30;   // Position X du texte 0
-  int yPos = 17;   // Position Y du texte 0
-  int x1Pos = 30;  // Position X du texte 1
-  int y1Pos = 44;  // Position Y du texte 1
-  int x2Pos = 30;  // Position X du texte 2
-  int y2Pos = 70;  // Position Y du texte 2
+  int xPos = 30;   // X Position of text 0
+  int yPos = 17;   // Y Position of text 0
+  int x1Pos = 30;  // X Position of text 1
+  int y1Pos = 44;  // Y Position of text 1
+  int x2Pos = 30;  // X Position of text 2
+  int y2Pos = 70;  // Y Position of text 2
 
-  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Effacer les ancien texte
+  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text
   canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
   canvas.fillRoundRect(rect_x + 1, rect_y + 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
 
@@ -355,7 +371,9 @@ void OpenMenuOS::drawMenu() {
   canvas.setCursor(xPos, yPos);
   canvas.println(menu_items[item_sel_previous]);
 
-  canvas.drawRGBBitmap(5, 5, (uint16_t*)bitmap_icons[item_sel_previous], 16, 16);
+  if (images) {
+    canvas.drawRGBBitmap(5, 5, (uint16_t*)bitmap_icons[item_sel_previous], 16, 16);
+  }
   // draw selected item as icon + label in bold font
   canvas.setFont(&FreeMonoBold9pt7b);
   canvas.setTextSize(1);
@@ -363,7 +381,9 @@ void OpenMenuOS::drawMenu() {
   canvas.setCursor(x1Pos, y1Pos);
   canvas.println(menu_items[item_selected]);
 
-  canvas.drawRGBBitmap(5, 32, (uint16_t*)bitmap_icons[item_selected], 16, 16);
+  if (images) {
+    canvas.drawRGBBitmap(5, 32, (uint16_t*)bitmap_icons[item_selected], 16, 16);
+  }
   // draw next item as icon + label
   canvas.setFont(&FreeMono9pt7b);
   canvas.setTextSize(1);
@@ -371,7 +391,9 @@ void OpenMenuOS::drawMenu() {
   canvas.setCursor(x2Pos, y2Pos);
   canvas.println(menu_items[item_sel_next]);
 
-  canvas.drawRGBBitmap(5, 59, (uint16_t*)bitmap_icons[item_sel_next], 16, 16);
+  if (images) {
+    canvas.drawRGBBitmap(5, 59, (uint16_t*)bitmap_icons[item_sel_next], 16, 16);
+  }
 
   for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
     if (y % 2 == 0) {
@@ -391,8 +413,91 @@ void OpenMenuOS::drawMenu() {
       canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
     }
   }
-  tft.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
-  canvas.fillScreen(ST7735_BLACK);
+}
+void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
+  NUM_SUBMENU_ITEMS = 0;
+  va_list args;
+  va_start(args, names);
+  const char* name = names;
+  // Clear the submenu_items array before putting in new values
+  memset(submenu_items, 0, sizeof(submenu_items));
+  while (name != NULL) {
+    strncpy(submenu_items[NUM_SUBMENU_ITEMS], name, MAX_ITEM_LENGTH);
+    name = va_arg(args, const char*);
+    NUM_SUBMENU_ITEMS++;
+  }
+  va_end(args);
+
+  checkForButtonPressSubmenu();  // Check for button presses to control the submenu
+
+  // Calculate the position of the rectangle
+  uint16_t rect_x = (tftWidth - rect_width - 4) / 2;                               // Center the rectangle horizontally with a 4-pixel space on the right
+  uint16_t rect_y = (tftHeight - rect_height) / 2;                                 // Center the rectangle vertically
+  canvas.drawFastVLine(153, 29, 22, ST7735_WHITE);                                 // Display the Shadow
+  canvas.drawFastHLine(3, 51, 150, ST7735_WHITE);                                  // Display the Shadow
+  canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, ST7735_WHITE);  // Display the rectangle
+
+  int xPos = 30;   // X Position of text 0
+  int yPos = 17;   // Y Position of text 0
+  int x1Pos = 30;  // X Position of text 1
+  int y1Pos = 44;  // Y Position of text 1
+  int x2Pos = 30;  // X Position of text 2
+  int y2Pos = 70;  // Y Position of text 2
+
+  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text
+  canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+  canvas.fillRoundRect(rect_x + 1, rect_y + 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+
+
+  // draw previous item as icon + label
+  canvas.setFont(&FreeMono9pt7b);
+  canvas.setTextSize(1);
+  canvas.setTextColor(ST7735_WHITE);
+  canvas.setCursor(xPos, yPos);
+  canvas.println(submenu_items[item_sel_previous_submenu]);
+
+  if (images) {
+    canvas.drawRGBBitmap(5, 5, (uint16_t*)bitmap_icons[item_sel_previous_submenu], 16, 16);
+  }
+  // draw selected item as icon + label in bold font
+  canvas.setFont(&FreeMonoBold9pt7b);
+  canvas.setTextSize(1);
+  canvas.setTextColor(ST7735_WHITE);
+  canvas.setCursor(x1Pos, y1Pos);
+  canvas.println(submenu_items[item_selected_submenu]);
+
+  if (images) {
+    canvas.drawRGBBitmap(5, 32, (uint16_t*)bitmap_icons[item_selected_submenu], 16, 16);
+  }
+  // draw next item as icon + label
+  canvas.setFont(&FreeMono9pt7b);
+  canvas.setTextSize(1);
+  canvas.setTextColor(ST7735_WHITE);
+  canvas.setCursor(x2Pos, y2Pos);
+  canvas.println(submenu_items[item_sel_next_submenu]);
+
+  if (images) {
+    canvas.drawRGBBitmap(5, 59, (uint16_t*)bitmap_icons[item_sel_next_submenu], 16, 16);
+  }
+
+  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
+    if (y % 2 == 0) {
+      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
+    }
+  }
+  // Draw scrollbar handle
+  int boxHeight = tftHeight / (NUM_SUBMENU_ITEMS);
+  int boxY = boxHeight * item_selected_submenu;
+  // Clear previous scrollbar handle
+  canvas.fillRect(tftWidth - 3, boxHeight * item_sel_next_submenu, 3, boxHeight, ST7735_BLACK);
+  // Draw new scrollbar handle
+  canvas.fillRect(tftWidth - 3, boxY, 3, boxHeight, ST7735_WHITE);
+
+  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
+    if (y % 2 == 0) {
+      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
+    }
+  }
 }
 void OpenMenuOS::drawSettingMenu(const char* items...) {
 
@@ -558,6 +663,72 @@ void OpenMenuOS::drawSettingMenu(const char* items...) {
     buttonPressProcessed = false;  // Reinitialiser la variable de controle lorsque le bouton est relache
   }
 }
+void OpenMenuOS::drawTileMenu(int rows, int columns, int tile_color) {
+  int TILE_ROUND_RADIUS = 5;
+  int TILE_MARGIN = 2;
+  int tileWidth = (tftWidth - (columns + 1) * TILE_MARGIN) / columns;
+  int tileHeight = (tftHeight - (rows + 1) * TILE_MARGIN) / rows;
+
+  if (current_screen_tile_menu == 0) {
+    if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
+      if (current_screen_tile_menu == 0) {
+        current_screen_tile_menu = 1;
+      }
+      button_select_clicked = 1;
+    }
+    if ((digitalRead(BUTTON_UP_PIN) == HIGH) && (button_up_clicked_tile == 0)) {  // up button clicked - jump to previous menu item
+      item_selected_tile_menu = item_selected_tile_menu + 1;                      // select previous item
+      button_up_clicked_tile = 1;                                                 // set button to clicked to only perform the action once
+      if (item_selected_tile_menu >= rows * columns) {                            // if first item was selected, jump to last item
+        item_selected_tile_menu = 0;
+      }
+    }
+
+    if ((digitalRead(BUTTON_UP_PIN) == LOW) && (button_up_clicked_tile == 1)) {  // unclick
+      button_up_clicked_tile = 0;
+    }
+
+    if ((digitalRead(BUTTON_SELECT_PIN) == LOW) && (button_select_clicked == 1)) {  // unclick
+      button_select_clicked = 0;
+    }
+
+    int row = item_selected_tile_menu / columns;
+    int col = item_selected_tile_menu % columns;
+    tile_menu_selection_X = col * (tileWidth + TILE_MARGIN) + TILE_MARGIN;
+    tile_menu_selection_Y = row * (tileHeight + TILE_MARGIN) + TILE_MARGIN;
+
+    canvas.fillScreen(ST7735_BLACK);
+    canvas.setTextColor(ST7735_WHITE);
+    canvas.setTextSize(1);
+    // canvas.drawRGBBitmap(3, 3, (uint16_t*)News_map, 34, 34);
+    // canvas.drawRGBBitmap(43, 3, (uint16_t*)Reddit_map, 34, 34);
+    // canvas.drawRGBBitmap(83, 3, (uint16_t*)Money_map, 34, 34);
+    // canvas.drawRGBBitmap(123, 3, (uint16_t*)Fyou_map, 34, 34);
+    // canvas.drawRGBBitmap(3, 43, (uint16_t*)Bitcoin_map, 34, 34);
+    // canvas.drawRGBBitmap(43, 43, (uint16_t*)chatGPT_map, 34, 34);
+    // canvas.drawRGBBitmap(83, 43, (uint16_t*)firstaid_icon_map, 34, 34);
+    // canvas.drawRGBBitmap(123, 43, (uint16_t*)shelter_icon_map, 34, 34);
+
+    for (int i = 0; i < rows * columns; ++i) {
+      int row = i / columns;
+      int col = i % columns;
+      int tileX = col * (tileWidth + TILE_MARGIN) + TILE_MARGIN;
+      int tileY = row * (tileHeight + TILE_MARGIN) + TILE_MARGIN;
+      canvas.fillRoundRect(tileX, tileY, tileWidth, tileHeight, TILE_ROUND_RADIUS, tile_color);
+    }
+    canvas.drawRoundRect(tile_menu_selection_X, tile_menu_selection_Y, tileWidth, tileHeight, TILE_ROUND_RADIUS, ST7735_WHITE);
+  } else if (current_screen_tile_menu == 1) {
+    delay(200);
+    if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
+      if (current_screen_tile_menu == 1) {
+        current_screen_tile_menu = 0;
+        delay(200);
+      }
+    }
+    canvas.fillScreen(ST7735_BLACK);
+    canvas.setFont(nullptr);
+  }
+}
 void OpenMenuOS::printMenuToSerial() {
   Serial.println("Menu Items:");
   for (int i = 0; i < NUM_MENU_ITEMS; i++) {
@@ -610,6 +781,46 @@ void OpenMenuOS::checkForButtonPress() {
   if (item_selected_settings_previous < 0) { item_selected_settings_previous = NUM_SETTINGS_ITEMS - 1; }  // previous item would be below first = make it the last
   item_selected_settings_next = item_selected_settings + 1;
   if (item_selected_settings_next >= NUM_SETTINGS_ITEMS) { item_selected_settings_next = 0; }  // next item would be after last = make it the first
+}
+void OpenMenuOS::checkForButtonPressSubmenu() {
+  if (current_screen == 1) {                                                 // MENU SCREEN // up and down buttons only work for the menu screen
+    if ((digitalRead(BUTTON_UP_PIN) == HIGH) && (button_up_clicked == 0)) {  // up button clicked - jump to previous menu item
+      item_selected_submenu = item_selected_submenu - 1;                     // select previous item
+      button_up_clicked = 1;                                                 // set button to clicked to only perform the action once
+      if (item_selected_submenu < 0) {                                       // if first item was selected, jump to last item
+        item_selected_submenu = NUM_SUBMENU_ITEMS - 1;
+      }
+    }
+
+    if ((digitalRead(BUTTON_UP_PIN) == LOW) && (button_up_clicked == 1)) {  // unclick
+      button_up_clicked = 0;
+    }
+  }
+  if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
+    if (button_select_clicked == 0) {
+      select_button_press_time = millis();  // Start measuring button press time
+      button_select_clicked = 1;
+    } else if (current_screen == 2 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
+      current_screen = 1;
+      delay(350);
+    }
+  } else if (digitalRead(BUTTON_SELECT_PIN) == LOW) {
+    if (button_select_clicked == 1) {
+      if (current_screen == 1) {
+        current_screen = 2;
+      }
+      button_select_clicked = 0;  // Reset the button state
+    }
+  }
+  if ((digitalRead(BUTTON_SELECT_PIN) == LOW) && (button_select_clicked == 1)) {  // unclick
+    button_select_clicked = 0;
+  }
+
+  // set correct values for the previous and next items
+  item_sel_previous_submenu = item_selected_submenu - 1;
+  if (item_sel_previous_submenu < 0) { item_sel_previous_submenu = NUM_SUBMENU_ITEMS - 1; }  // previous item would be below first = make it the last
+  item_sel_next_submenu = item_selected_submenu + 1;
+  if (item_sel_next_submenu >= NUM_SUBMENU_ITEMS) { item_sel_next_submenu = 0; }  // next item would be after last = make it the first
 }
 void OpenMenuOS::drawCanvasOnTFT() {
   tft.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
@@ -668,6 +879,12 @@ void OpenMenuOS::readFromEEPROM() {
 int OpenMenuOS::getCurrentScreen() const {
   return current_screen;
 }
+int OpenMenuOS::getCurrentScreenTileMenu() const {
+  return current_screen_tile_menu;
+}
 int OpenMenuOS::getSelectedItem() const {
   return item_selected;
+}
+int OpenMenuOS::getSelectedItemTileMenu() const {
+  return item_selected_tile_menu;
 }
