@@ -16,7 +16,7 @@
 #include <Fonts/FreeMono9pt7b.h>
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
-#include "images.h"
+// #include "images.h"
 #include "OpenMenuOS.h"
 #include <Preferences.h>
 #include <string>

@@ -1,4 +1,4 @@
-#include <OpenMenuOS.h>               // Include the OpenMenuOS library
+#include "OpenMenuOS.h"               // Include the OpenMenuOS library
 #include <Fonts/FreeMonoBold9pt7b.h>  // Include the required fonts
 #include <Fonts/FreeMono9pt7b.h>
 
@@ -7,7 +7,7 @@ OpenMenuOS menu(10, 5, 12, 4, 21, 22);  //btn_up, btn_sel, tft_bl, cs, dc, rst
 
 void setup() {
   Serial.begin(921600);  // Initialize serial communication
-  menu.begin();          // Initialize the menu
+  menu.begin();  // Initialize the menu
 }
 
 void loop() {

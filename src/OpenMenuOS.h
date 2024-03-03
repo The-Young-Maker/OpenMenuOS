@@ -11,6 +11,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <Preferences.h>
+#include "images.h"
 
 #define MAX_MENU_ITEMS 20      // Maximum number of menu items
 #define MAX_SETTINGS_ITEMS 10  // Maximum number of settings items
