@@ -1,13 +1,14 @@
-#include "OpenMenuOS.h"               // Include the OpenMenuOS library
+#include <OpenMenuOS.h>               // Include the OpenMenuOS library
 #include <Fonts/FreeMonoBold9pt7b.h>  // Include the required fonts
 #include <Fonts/FreeMono9pt7b.h>
 
 // Create an instance of the OpenMenuOS class with button and display pins, along with menu item names
-OpenMenuOS menu(10, 5, 12, 4, 21, 22);  //btn_up, btn_sel, tft_bl, cs, dc, rst
+OpenMenuOS menu(10, 11, 5, 12, 4, 21, 22);  //btn_up, btn_down, btn_sel, tft_bl, cs, dc, rst
+
 
 void setup() {
-  Serial.begin(921600);  // Initialize serial communication
-  menu.begin();  // Initialize the menu
+  Serial.begin(921600);                                     // Initialize serial communication
+  menu.begin(INITR_GREENTAB, "ESP32_OpenMenuOS", "esp32");  // Initialize the menu, parameters :  Display type, OTA Hostname, OTA Password
 }
 
 void loop() {
@@ -60,5 +61,5 @@ void loop() {
     // Execute code if a specific menu item setting is enabled
     Serial.println("Menu item bool 5 is true");
   }
-  menu.drawCanvasOnTFT();  // Draw the updated canvas on the screen. You need to call it at the END of your code (in the "loop()")
+  menu.drawCanvasOnTFT();  // Draw the updated canvas on the screen. You need to call it at the END of your code (in the end of "loop()")
 }

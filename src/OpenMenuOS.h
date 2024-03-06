@@ -21,10 +21,12 @@ class OpenMenuOS {
 public:
   static bool menu_items_settings_bool[];
   GFXcanvas16 canvas;
+  Adafruit_ST7735 tft;
+  Preferences prefs;
 
-  OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst);  // BTN_UP pin, BTN_SEL pin, CS pin, DC pin, RST pin, Menu Items
+  OpenMenuOS(int btn_up, int btn_down, int btn_sel, int tft_bl, int cs, int dc, int rst);  // BTN_UP pin, BTN_DOWN pin, BTN_SEL pin, CS pin, DC pin, RST pin, Menu Items
 
-  void begin();
+  void begin(uint8_t display, const char* hostname, const char* password);  // Display type, OTA Hostname, OTA Password
   void loop();
 
   void checkSerial();
@@ -41,14 +43,16 @@ public:
   void saveToEEPROM();
   void readFromEEPROM();
 
-  int getCurrentScreen() const;  // Getter method for current_screen
+  int getCurrentScreen() const;          // Getter method for current_screen
   int getCurrentScreenTileMenu() const;  // Getter method for current_screen
-  int getSelectedItem() const;   // Getter method for item_selected
+  int getSelectedItem() const;           // Getter method for item_selected
   int getSelectedItemTileMenu() const;   // Getter method for item_selected
+  int getTftHeight() const;              // Getter method for tftHeight
+  int getTftWidth() const;               // Getter method for tftWidth
+  int UpButton() const;                  // Getter method for Up Button
+  int DownButton() const;                // Getter method for Down Button
+  int SelectButton() const;              // Getter method for Select Button
 private:
-  Adafruit_ST7735 tft;
-  Preferences prefs;
-
   char menu_items[MAX_MENU_ITEMS][MAX_ITEM_LENGTH];
   char submenu_items[MAX_MENU_ITEMS][MAX_ITEM_LENGTH];
   int NUM_MENU_ITEMS;

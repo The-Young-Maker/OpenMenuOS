@@ -31,7 +31,7 @@ Include the `OpenMenuOS.h` header file in your sketch to access the OpenMenuOS f
 
 ### Constructor
 
-To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, SELECT), TFT backlight pin, and display control pins (CS, DC, RST). Additionally, provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
+To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, SELECT), TFT backlight pin, and display control pins (CS, DC, RST).
 
 #### NOTE : For all the documentation, I will use menu as the constructor
 
@@ -39,6 +39,7 @@ Example:
 ```
 OpenMenuOS menu(
   Button UP Pin,
+  Button DOWN Pin,
   Button SELECT Pin,
   TFT Backlight Pin,
   Display CS Pin,
@@ -49,11 +50,23 @@ OpenMenuOS menu(
 
 Example Use:
 
-`OpenMenuOS menu(10, 5, 12, 4, 21, 22, "Flashlight", "Profile", "Heat", "Reflow", "Settings", "Wifi", "Package", "Survival", "Other", NULL);`
+`OpenMenuOS menu(10, 11, 5, 12, 4, 21, 22);`
 
 ### begin()
 
-`menu.begin()`
+Example:
+```
+menu.begin(
+Display type, 
+OTA hostname, 
+OTA password
+)
+```
+
+Example Use: 
+
+`menu.begin(INITR_GREENTAB, "ESP32_OpenMenuOS", "esp32");`
+
 
 Initializes the OpenMenuOS library. Call this function in the setup() function of your sketch.
 
@@ -68,7 +81,7 @@ The main loop function of the OpenMenuOS library. Call this function in the loop
 
 #### drawMenu()
 
-Draws the menu on the display.
+Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
 Example:
 ```
@@ -84,7 +97,7 @@ Example Use:
 
 #### drawSubmenu()
 
-Draws the menu on the display.
+Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
 Example:
 ```
@@ -101,6 +114,7 @@ Example Use:
 #### drawSettingMenu()
 
 Draws the settings menu on the display.
+NOTE: There are by default 5 settings which can not be changed
 
 Example:
 ```
@@ -133,7 +147,7 @@ Example Use:
 
 #### void drawCanvasOnTFT()
 
-Draws the canvas on the TFT display.
+Draws the canvas on the TFT display. You need to call it at the END of your code (in the end of "loop()")
 
 ### Button Handling
 
@@ -177,10 +191,30 @@ Returns the current screen (0 for tile menu, 1 for tile submenu).
 
 Returns the index of the selected tile menu item.
 
+#### getTftHeight()
+
+Returns the height of the display (in pixels).
+
+#### getTftWidth()
+
+Returns the width of the display (in pixels).
+
+#### UpButton()
+
+Returns the status (HIGH or LOW) of the Up button.
+
+#### DownButton()
+
+Returns the status (HIGH or LOW) of the Down button.
+
+#### SelectButton()
+
+Returns the status (HIGH or LOW) of the Select button.
+
 ## Menu Navigation
 
 #### Moving Through Menu Items: 
-Utilize the UP button to navigate through the menu items.
+Utilize the UP and DOWN button to navigate through the menu items.
 
 #### Selecting an Item: 
 Press the SELECT button to select a menu item.
@@ -192,11 +226,11 @@ Perform a long press on the SELECT button to return to the previous menu level.
 
 ### Menu Icons
 
-OpenMenuOS supports menu icons to enhance the visual presentation of menu items. Icons should be provided as 16x16 pixel bitmaps and stored in an `images.h` file. Define each icon as a constant array of bytes.
+OpenMenuOS supports menu icons to enhance the visual presentation of menu items. Icons should be provided as 16x16 pixel bitmaps and stored in an `images.cpp` file. Define each icon as a constant array of bytes.
 
 ### Additional Images
 
-In addition to menu icons, OpenMenuOS allows for the integration of custom images or icons beyond menu items. These images can be used for boot screens, splash screens, or other graphical elements. Store additional images in the `images.h` file as constant arrays of bytes.
+In addition to menu icons, OpenMenuOS allows for the integration of custom images or icons beyond menu items. These images can be used for boot screens, splash screens, or other graphical elements. Store additional images in the `images.cpp` file as constant arrays of bytes.
 
 
 ## Additional Notes

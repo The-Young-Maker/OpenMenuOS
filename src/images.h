@@ -23,8 +23,6 @@ extern const uint8_t Menu_icon_9[];
 extern const size_t Menu_icon_9_Size;
 extern const unsigned char* bitmap_icons[];
 extern const size_t bitmap_icons_size;
-extern const unsigned char epd_bitmap_contour_selection_dashboard[];
-extern const size_t epd_bitmap_contour_selection_dashboard_size;
 extern const uint8_t Boot_img[];
 extern const size_t Boot_img_size;
 

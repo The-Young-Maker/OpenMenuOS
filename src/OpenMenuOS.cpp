@@ -39,7 +39,6 @@ int tile_menu_selection_Y = 0;
 const uint16_t rect_width = 155;  // Width of the selection rectangle
 const uint16_t rect_height = 26;  // Height of the selection rectangle
 
-
 // Menu Item Positioning Variables
 int item_sel_previous;  // Previous item - used in the menu screen to draw the item before the selected one
 int item_selected;      // Current item -  used in the menu screen to draw the selected item
@@ -65,12 +64,16 @@ unsigned long select_button_press_time = 0;
 int button_up_clicked = 0;  // Only perform action when the button is clicked, and wait until another press
 int button_up_clicked_tile = 0;
 int button_up_clicked_settings = 0;  // Only perform action when the button is clicked, and wait until another press
+int button_down_clicked = 0;         // Only perform action when the button is clicked, and wait until another press
+int button_down_clicked_tile = 0;
+int button_down_clicked_settings = 0;  // Only perform action when the button is clicked, and wait until another press
 int button_select_clicked = 0;
 bool previousButtonState = LOW;
 bool buttonPressProcessed = false;
 
 // Button Pin Definitions
 int BUTTON_UP_PIN;      // Pin for UP button
+int BUTTON_DOWN_PIN;    // Pin for DOWN button
 int BUTTON_SELECT_PIN;  // Pin for SELECT button
 int TFT_BL_PIN;         // Pin for TFT Backlight
 
@@ -107,19 +110,20 @@ bool OpenMenuOS::menu_items_settings_bool[MAX_SETTINGS_ITEMS] = {
 };
 
 
-OpenMenuOS::OpenMenuOS(int btn_up, int btn_sel, int tft_bl, int cs, int dc, int rst)
+OpenMenuOS::OpenMenuOS(int btn_up, int btn_down, int btn_sel, int tft_bl, int cs, int dc, int rst)
   : tft(cs, dc, rst), canvas(160, 80) {
   BUTTON_UP_PIN = btn_up;
+  BUTTON_DOWN_PIN = btn_down;
   BUTTON_SELECT_PIN = btn_sel;
   TFT_BL_PIN = tft_bl;
 }
 
-void OpenMenuOS::begin() {
+void OpenMenuOS::begin(uint8_t display, const char* hostname, const char* password) {  // Display type, OTA Hostname, OTA Password
   item_selected = 0;
   current_screen = 0;  // 0 = Menu, 1 = Submenu
 
   // Set up display
-  tft.initR(INITR_GREENTAB);
+  tft.initR(display);
   tft.setRotation(3);
   canvas.fillScreen(ST7735_BLACK);
 
@@ -140,14 +144,15 @@ void OpenMenuOS::begin() {
   digitalWrite(TFT_BL_PIN, menu_items_settings_bool[4] ? LOW : HIGH);
 
   // Set up ArduinoOTA for Over-The-Air updates
-  ArduinoOTA.setHostname("ESP32-OpenMenuOS");
-  ArduinoOTA.setPassword("esp32");
+  ArduinoOTA.setHostname(hostname);
+  ArduinoOTA.setPassword(password);
   if (menu_items_settings_bool[6]) {
     ArduinoOTA.begin();
   }
 
   // Set up button pins
   pinMode(BUTTON_UP_PIN, INPUT);
+  pinMode(BUTTON_DOWN_PIN, INPUT);
   pinMode(BUTTON_SELECT_PIN, INPUT);
 }
 void OpenMenuOS::loop() {
@@ -500,7 +505,7 @@ void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
   }
 }
 void OpenMenuOS::drawSettingMenu(const char* items...) {
-
+  NUM_SETTINGS_ITEMS = 5;
   va_list args;
   va_start(args, items);
   const char* item = items;
@@ -751,6 +756,18 @@ void OpenMenuOS::checkForButtonPress() {
     if ((digitalRead(BUTTON_UP_PIN) == LOW) && (button_up_clicked == 1)) {  // unclick
       button_up_clicked = 0;
     }
+
+    if ((digitalRead(BUTTON_DOWN_PIN) == HIGH) && (button_down_clicked == 0)) {  // down button clicked - jump to next menu item
+      item_selected = item_selected + 1;                                         // select next item
+      button_down_clicked = 1;                                                   // set button to clicked to only perform the action once
+      if (item_selected >= NUM_MENU_ITEMS) {                                     // if last item was selected, jump to first item
+        item_selected = 0;
+      }
+    }
+
+    if ((digitalRead(BUTTON_DOWN_PIN) == LOW) && (button_down_clicked == 1)) {  // unclick
+      button_down_clicked = 0;
+    }
   }
   if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
     if (button_select_clicked == 0) {
@@ -795,6 +812,18 @@ void OpenMenuOS::checkForButtonPressSubmenu() {
     if ((digitalRead(BUTTON_UP_PIN) == LOW) && (button_up_clicked == 1)) {  // unclick
       button_up_clicked = 0;
     }
+  }
+
+  if ((digitalRead(BUTTON_DOWN_PIN) == HIGH) && (button_down_clicked == 0)) {  // down button clicked - jump to next menu item
+    item_selected_submenu = item_selected_submenu + 1;                         // select next item
+    button_down_clicked = 1;                                                   // set button to clicked to only perform the action once
+    if (item_selected_submenu >= NUM_SUBMENU_ITEMS) {                          // if last item was selected, jump to first item
+      item_selected_submenu = 0;
+    }
+  }
+
+  if ((digitalRead(BUTTON_DOWN_PIN) == LOW) && (button_down_clicked == 1)) {  // unclick
+    button_down_clicked = 0;
   }
   if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
     if (button_select_clicked == 0) {
@@ -887,4 +916,19 @@ int OpenMenuOS::getSelectedItem() const {
 }
 int OpenMenuOS::getSelectedItemTileMenu() const {
   return item_selected_tile_menu;
+}
+int OpenMenuOS::getTftHeight() const {
+  return rect_height;
+}
+int OpenMenuOS::getTftWidth() const {
+  return rect_width;
+}
+int OpenMenuOS::UpButton() const {
+  return BUTTON_UP_PIN;
+}
+int OpenMenuOS::DownButton() const {
+  return BUTTON_DOWN_PIN;
+}
+int OpenMenuOS::SelectButton() const {
+  return BUTTON_SELECT_PIN;
 }
