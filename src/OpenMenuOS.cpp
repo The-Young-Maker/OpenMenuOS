@@ -918,10 +918,10 @@ int OpenMenuOS::getSelectedItemTileMenu() const {
   return item_selected_tile_menu;
 }
 int OpenMenuOS::getTftHeight() const {
-  return rect_height;
+  return tftHeight;
 }
 int OpenMenuOS::getTftWidth() const {
-  return rect_width;
+  return tftWidth;
 }
 int OpenMenuOS::UpButton() const {
   return BUTTON_UP_PIN;
