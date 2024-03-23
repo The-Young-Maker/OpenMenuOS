@@ -262,7 +262,7 @@ In addition to menu icons, OpenMenuOS allows for the integration of custom image
 
 1. The scrolling text in the settings is flickering when not supposed.
 
-The know bugs are also labeled as #bug" in the code. Just do "CTRL+F" and search for "#bug"
+The know bugs are also labeled as "#bug" in the code. Just do "CTRL+F" and search for "#bug"
 
 ## Additional Notes
 The library is still in beta. If you encounter any bugs or if you have any suggestion, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
