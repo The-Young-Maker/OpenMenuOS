@@ -6,16 +6,16 @@
 
 ## Introduction
 
-OpenMenuOS is a versatile open-source menu system for ESP32, designed to simplify the implementation of user interfaces in various applications. This documentation provides an overview of the OpenMenuOS library, including its features, usage, and customization options.
+OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266 (and soon other microcontrollers!), designed to simplify the implementation of user interfaces in various applications. This documentation provides an overview of the OpenMenuOS library, including its features, usage, and customization options.
 
 ## Features
 
 - Intuitive menu navigation system
-- Support for multiple menu levels and submenus
+- Support for multiple menu levels including submenus, settings and tile menu 
 - Flexible configuration options for button and display pins
 - Customizable menu item names and icons
 - Additional support for images and icons beyond menu items
-- Integration with serial communication and WiFi functionality
+- When one of the items' name is too long, a function make it scroll automatically to show the whole name
 
 ## Getting Started
 
@@ -31,7 +31,7 @@ Include the `OpenMenuOS.h` header file in your sketch to access the OpenMenuOS f
 
 ### Constructor
 
-To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, SELECT), TFT backlight pin, and display control pins (CS, DC, RST). Additionally, provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
+To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, DOWN, SELECT), TFT backlight pin, and display control pins (CS, DC, RST).
 
 #### NOTE : For all the documentation, I will use menu as the constructor
 
@@ -39,6 +39,7 @@ Example:
 ```
 OpenMenuOS menu(
   Button UP Pin,
+  Button DOWN Pin,
   Button SELECT Pin,
   TFT Backlight Pin,
   Display CS Pin,
@@ -49,11 +50,21 @@ OpenMenuOS menu(
 
 Example Use:
 
-`OpenMenuOS menu(10, 5, 12, 4, 21, 22, "Flashlight", "Profile", "Heat", "Reflow", "Settings", "Wifi", "Package", "Survival", "Other", NULL);`
+`OpenMenuOS menu(10, 11, 5, 12, 4, 21, 22);`
 
 ### begin()
 
-`menu.begin()`
+Example:
+```
+menu.begin(
+Display type, 
+)
+```
+
+Example Use: 
+
+`menu.begin(INITR_GREENTAB);`
+
 
 Initializes the OpenMenuOS library. Call this function in the setup() function of your sketch.
 
@@ -61,14 +72,14 @@ Initializes the OpenMenuOS library. Call this function in the setup() function o
 
 `menu.loop()`
 
-The main loop function of the OpenMenuOS library. Call this function in the loop() function of your sketch. This function checks for button presses and handle the OTA.
+The main loop function of the OpenMenuOS library. Call this function in the loop() function of your sketch. This function checks for button presses.
 ## Function
 
 ### Display Functions
 
 #### drawMenu()
 
-Draws the menu on the display.
+Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
 Example:
 ```
@@ -84,7 +95,7 @@ Example Use:
 
 #### drawSubmenu()
 
-Draws the menu on the display.
+Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
 Example:
 ```
@@ -101,6 +112,7 @@ Example Use:
 #### drawSettingMenu()
 
 Draws the settings menu on the display.
+NOTE: There are by default 1 item in the settings (For the backlight)
 
 Example:
 ```
@@ -131,19 +143,47 @@ Example Use:
 
 `menu.drawTileMenu(2, 4, ST7735_GREEN);`
 
+### scrollTextHorizontal()
+Example:
+```
+menu.setTextScroll(
+int16_t x,           // X coordinate
+int16_t y,           // Y coordinate
+const char* text,    // Text to be scrolled
+uint16_t textColor,  // Text color
+uint16_t bgColor,    // Background color
+uint8_t textSize,    // Size of the text
+uint16_t delayTime,  // Delay between the frame of the scroll
+uint16_t windowSize  // Size of the window where the text will be displayed (the scrolling text is only display in that window)
+)
+```
+
+Example Use: 
+
+`menu.scrollTextHorizontal(10, 44,"Hello, World!", ST7735_WHITE, ST7735_BLACK, 1, 50, 100);`
+
+### setTextScroll()
+
+Example:
+```
+menu.setTextScroll(
+bool textScroll, 
+)
+```
+
+Example Use: 
+
+`menu.setTextScroll(false);`
+
 #### void drawCanvasOnTFT()
 
-Draws the canvas on the TFT display.
+Draws the canvas on the TFT display. You need to call it at the END of your code (in the end of "loop()")
 
 ### Button Handling
 
 #### checkForButtonPress()
 
 Checks for button presses and handles navigation.
-
-#### checkSerial()
-
-Checks for input from the serial monitor for configuring Wi-Fi settings.
 
 ### Settings Management
 
@@ -177,10 +217,30 @@ Returns the current screen (0 for tile menu, 1 for tile submenu).
 
 Returns the index of the selected tile menu item.
 
+#### getTftHeight()
+
+Returns the height of the display (in pixels).
+
+#### getTftWidth()
+
+Returns the width of the display (in pixels).
+
+#### UpButton()
+
+Returns the status (HIGH or LOW) of the Up button.
+
+#### DownButton()
+
+Returns the status (HIGH or LOW) of the Down button.
+
+#### SelectButton()
+
+Returns the status (HIGH or LOW) of the Select button.
+
 ## Menu Navigation
 
 #### Moving Through Menu Items: 
-Utilize the UP button to navigate through the menu items.
+Utilize the UP and DOWN button to navigate through the menu items.
 
 #### Selecting an Item: 
 Press the SELECT button to select a menu item.
@@ -192,12 +252,17 @@ Perform a long press on the SELECT button to return to the previous menu level.
 
 ### Menu Icons
 
-OpenMenuOS supports menu icons to enhance the visual presentation of menu items. Icons should be provided as 16x16 pixel bitmaps and stored in an `images.h` file. Define each icon as a constant array of bytes.
+OpenMenuOS supports menu icons to enhance the visual presentation of menu items. Icons should be provided as 16x16 pixel bitmaps and stored in an `images.cpp` file. Define each icon as a constant array of bytes.
 
 ### Additional Images
 
-In addition to menu icons, OpenMenuOS allows for the integration of custom images or icons beyond menu items. These images can be used for boot screens, splash screens, or other graphical elements. Store additional images in the `images.h` file as constant arrays of bytes.
+In addition to menu icons, OpenMenuOS allows for the integration of custom images or icons beyond menu items. These images can be used for boot screens, splash screens, or other graphical elements. Store additional images in the `images.cpp` file as constant arrays of bytes.
 
+## Known Bug
+
+1. The scrolling text in the settings is flickering when not supposed.
+
+The know bugs are also labeled as #bug" in the code. Just do "CTRL+F" and search for "#bug"
 
 ## Additional Notes
 The library is still in beta. If you encounter any bugs or if you have any suggestion, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
