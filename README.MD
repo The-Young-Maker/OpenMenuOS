@@ -11,11 +11,15 @@ OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266 (and soo
 ## Features
 
 - Intuitive menu navigation system
-- Support for multiple menu levels including submenus, settings and tile menu 
+- Support for multiple menu levels including submenus, settings, and tile menu 
 - Flexible configuration options for button and display pins
 - Customizable menu item names and icons
 - Additional support for images and icons beyond menu items
-- When one of the items' name is too long, a function make it scroll automatically to show the whole name
+- Automatic scrolling of long item names
+- Different menu styles
+- Redirection to other parts of the menu (e.g., Settings)
+- Functionality to draw popups
+
 
 ## Getting Started
 
@@ -33,7 +37,7 @@ Include the `OpenMenuOS.h` header file in your sketch to access the OpenMenuOS f
 
 To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, DOWN, SELECT), TFT backlight pin, and display control pins (CS, DC, RST).
 
-#### NOTE : For all the documentation, I will use menu as the constructor
+#### NOTE : For all the documentation, I will use `menu` as the constructor
 
 Example:
 ```
@@ -73,11 +77,10 @@ Initializes the OpenMenuOS library. Call this function in the setup() function o
 `menu.loop()`
 
 The main loop function of the OpenMenuOS library. Call this function in the loop() function of your sketch. This function checks for button presses.
-## Function
 
-### Display Functions
+## Display Functions
 
-#### drawMenu()
+### drawMenu()
 
 Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
@@ -93,7 +96,7 @@ Example Use:
 
 `menu.drawMenu("Flashlight", "Profile", "Heat", "Reflow", "Settings", "Wifi", "Package", "Survival", "Other", NULL);`
 
-#### drawSubmenu()
+### drawSubmenu()
 
 Draws the menu on the display. Provide the names of menu items separated by commas, with a maximum of 20 items. Remember to end the list with "NULL".
 
@@ -109,7 +112,7 @@ Example Use:
 
 `menu.drawMenu("Submenu_1", "Submenu_2", "Submenu_3", "Submenu_4", NULL);`
 
-#### drawSettingMenu()
+### drawSettingMenu()
 
 Draws the settings menu on the display.
 NOTE: There are by default 1 item in the settings (For the backlight)
@@ -126,7 +129,7 @@ Example Use:
 
 `menu.drawSettingMenu("Light", "Sound", "Deep-Sleep", NULL);`
 
-#### drawTileMenu()
+### drawTileMenu()
 
 Draws a tile menu on the display.
 
@@ -143,6 +146,48 @@ Example Use:
 
 `menu.drawTileMenu(2, 4, ST7735_GREEN);`
 
+### redirectToMenu()
+
+Redirects to a menu.
+
+Example:
+```
+menu.redirectToMenu(
+Screen (The number of the screen ex.:0,1,2),
+Item (The number of the item)
+)
+```
+
+Example Use: 
+
+```
+    menu.redirectToMenu(0, 2);
+    menu.redirectToMenu(1, 3);
+```
+
+#### Note: It needs to be done in step. Ex: you can not pass from screen 2 to 0 in one call of the function. You need to go from 2 to 1, and from 1 to 0.
+
+### drawPopup()
+
+Show a popup on the screen.
+
+Example:
+```
+menu.drawPopup(
+Message,
+Variable to see if the button as been clicked
+)
+```
+
+Example Use: 
+
+```       
+ bool clicked;
+ menu.drawPopup("Set backlight?", clicked);
+  if (clicked) {
+    // If clicked....
+  }
+```
 ### scrollTextHorizontal()
 Example:
 ```
@@ -175,11 +220,83 @@ Example Use:
 
 `menu.setTextScroll(false);`
 
-#### void drawCanvasOnTFT()
+### drawScrollbar()
+
+Example:
+```
+menu.drawScrollbar(
+int selectedItem,
+int nextItem
+)
+```
+
+Example Use: 
+
+`menu.drawScrollbar(item_selected, item_selected_next);`
+
+#### Note: You should pass the argument with variable like in the example use.
+
+### setButtonAnimation()
+
+Example:
+```
+menu.setButtonAnimation(
+bool button animation (true or false)
+)
+```
+
+Example Use: 
+
+`menu.setButtonAnimation(false);`
+
+#### Note: The default value is true.
+
+### setMenuStyle()
+
+Example:
+```
+menu.setMenuStyle(
+int style // Current style available : 0 (Default), 1 (Modern)
+)
+```
+
+Example Use: 
+
+`menu.setMenuStyle(1);`
+
+### setSelectionColor()
+
+Example:
+```
+menu.setSelectionColor(
+uint16_t color // Setting the selection rectangle's color
+)
+```
+
+Example Use: 
+
+`menu.setSelectionColor(0xfa60);`
+OR
+`menu.setSelectionColor(ST7735_RED);`
+
+### useStylePreset()
+
+Example:
+```
+menu.useStylePreset(
+char* preset // Current preset available : "Default" and "Rabbit_R1"
+)
+```
+
+Example Use: 
+
+`menu.useStylePreset(Rabbit_R1);`
+
+### void drawCanvasOnTFT()
 
 Draws the canvas on the TFT display. You need to call it at the END of your code (in the end of "loop()")
 
-### Button Handling
+## Button Handling
 
 #### checkForButtonPress()
 

@@ -34,11 +34,19 @@ public:
   void drawSubmenu(bool images, const char* names...);
   void drawSettingMenu(const char* items...);
   void drawTileMenu(int rows, int columns, int tile_color);
+  void redirectToMenu(int screen, int item);
+  void drawPopup(char* message, bool& clicked);
+  void drawScrollbar(int selectedItem, int nextItem);
   void scrollTextHorizontal(int16_t x, int16_t y, const char* text, uint16_t textColor, uint16_t bgColor, uint8_t textSize, uint16_t delayTime, uint16_t windowSize);
   void eraseText(const char* text, int16_t xPos, int16_t x, int16_t y, uint16_t bgColor, uint16_t windowSize);
   void displayText(const char* text, int16_t xPos, int16_t x, int16_t y, uint16_t textColor, uint16_t windowSize);
 
   void setTextScroll(bool x);
+  void setButtonAnimation(bool x);
+  void setMenuStyle(int style);
+  void setScrollbar(bool x);
+  void setSelectionColor(uint16_t color);
+  void useStylePreset(char* preset);
 
   void printMenuToSerial();
   void checkForButtonPress();

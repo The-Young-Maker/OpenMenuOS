@@ -33,8 +33,8 @@ int tile_menu_selection_X = 0;
 int tile_menu_selection_Y = 0;
 
 // Rectangle dimensions
-const uint16_t rect_width = 155;  // Width of the selection rectangle
-const uint16_t rect_height = 26;  // Height of the selection rectangle
+uint16_t rect_width = tftWidth - 5;  // Width of the selection rectangle
+uint16_t rect_height = 26;           // Height of the selection rectangle
 
 // Menu Item Positioning Variables
 int item_sel_previous;  // Previous item - used in the menu screen to draw the item before the selected one
@@ -62,8 +62,14 @@ int button_down_clicked_settings = 0;  // Only perform action when the button is
 int button_select_clicked = 0;
 bool previousButtonState = LOW;
 bool buttonPressProcessed = false;
+bool long_press_handled = false;  // Flag to track if long press action has been handled
+
 
 bool textScroll = true;
+bool buttonAnimation = true;
+bool scrollbar = true;
+int menuStyle = 0;
+uint16_t selectionColor = ST7735_WHITE;
 
 // Button Pin Definitions
 int BUTTON_UP_PIN;      // Pin for UP button
@@ -83,11 +89,11 @@ char menu_items_settings[MAX_SETTINGS_ITEMS][MAX_ITEM_LENGTH] = {
 };
 
 bool OpenMenuOS::menu_items_settings_bool[MAX_SETTINGS_ITEMS] = {
-  true,   // Wifi
-  false,  // Open Wifi
-  true,   // Bluetooth
-  false,  // Backlight
-  false,  // OTA Updates
+  true,
+  false,
+  true,
+  false,
+  false,
   false,
   false,
   false,
@@ -125,9 +131,9 @@ void OpenMenuOS::begin(uint8_t display) {  // Display type
   digitalWrite(TFT_BL_PIN, menu_items_settings_bool[4] ? LOW : HIGH);
 
   // Set up button pins
-  pinMode(BUTTON_UP_PIN, INPUT);
-  pinMode(BUTTON_DOWN_PIN, INPUT);
-  pinMode(BUTTON_SELECT_PIN, INPUT);
+  pinMode(BUTTON_UP_PIN, INPUT_PULLDOWN);
+  pinMode(BUTTON_DOWN_PIN, INPUT_PULLDOWN);
+  pinMode(BUTTON_SELECT_PIN, INPUT_PULLDOWN);
 }
 void OpenMenuOS::loop() {
   checkForButtonPress();
@@ -148,24 +154,64 @@ void OpenMenuOS::drawMenu(bool images, const char* names...) {
   va_end(args);
 
   checkForButtonPress();  // Check for button presses to control the menu
+  if (!scrollbar) {       // If no scrollbar, offset the text from 18px
+    rect_width = tftWidth;
+  }
 
   // Calculate the position of the rectangle
-  uint16_t rect_x = (tftWidth - rect_width - 4) / 2;                               // Center the rectangle horizontally with a 4-pixel space on the right
-  uint16_t rect_y = (tftHeight - rect_height) / 2;                                 // Center the rectangle vertically
-  canvas.drawFastVLine(153, 29, 22, ST7735_WHITE);                                 // Display the Shadow
-  canvas.drawFastHLine(3, 51, 150, ST7735_WHITE);                                  // Display the Shadow
-  canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, ST7735_WHITE);  // Display the rectangle
+  uint16_t rect_x = 0;
+  uint16_t rect_y = (tftHeight - rect_height) / 2;  // Center the rectangle vertically
 
+  uint16_t selectedItemColor;
+  uint16_t selectedItemBackground;
+
+  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text. Change it by setting old text's color to white? (May be slower and more complicated??)
+  canvas.fillRoundRect(rect_x + 1, rect_y - 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+  canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+
+  switch (menuStyle) {
+    case 0:
+      if (digitalRead(BUTTON_SELECT_PIN) == HIGH && buttonAnimation) {
+        canvas.drawRoundRect(rect_x + 1, rect_y + 1, rect_width - 2, rect_height - 1, 4, selectionColor);  // Display the rectangle
+      } else {
+        if (!scrollbar) {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(tftWidth - 2, 29, 22, selectionColor);                        // Display the inside part
+          canvas.drawFastVLine(tftWidth, 29, 22, selectionColor);                            // Display the Shadow
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the inside part
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the Shadow
+        } else {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width - 2, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(rect_width - 4, rect_y + 2, 22, selectionColor);                  // Display the inside part
+          canvas.drawFastVLine(rect_width - 3, rect_y + 2, 22, selectionColor);                  // Display the Shadow
+          canvas.drawFastHLine(3, 51, 148, selectionColor);                                      // Display the inside part
+          canvas.drawFastHLine(3, 52, 148, selectionColor);                                      // Display the Shadow
+        }
+      }
+      selectedItemColor = ST7735_WHITE;
+      selectedItemBackground = ST7735_BLACK;
+      break;
+    case 1:
+      canvas.fillRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle
+      selectedItemColor = ST7735_BLACK;
+      selectedItemBackground = selectionColor;
+
+      break;
+  }
   int xPos = 30;   // X Position of text 0
   int yPos = 17;   // Y Position of text 0
   int x1Pos = 30;  // X Position of text 1
   int y1Pos = 44;  // Y Position of text 1
   int x2Pos = 30;  // X Position of text 2
   int y2Pos = 70;  // Y Position of text 2
+  int scrollWindowSize = 120;
 
-  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text
-  canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
-  canvas.fillRoundRect(rect_x + 1, rect_y + 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+  if (!images) {  // If no image, offset the text from 18px
+    xPos -= 18;
+    x1Pos -= 18;
+    x2Pos -= 18;
+    scrollWindowSize += 18;
+  }
 
   // draw previous item as icon + label
   canvas.setFont(&FreeMono9pt7b);
@@ -192,12 +238,12 @@ void OpenMenuOS::drawMenu(bool images, const char* names...) {
   if (strlen(menu_items[item_selected]) > MAX_ITEM_LENGTH_NOT_SCROLLING && textScroll) {
     tft.setFont(&FreeMonoBold9pt7b);  // Here, We don't use "canvas." because when using it, the calculated value in the "scrollTextHorizontal" function is wrong but not with "tft." #bug
     canvas.setFont(&FreeMonoBold9pt7b);
-    scrollTextHorizontal(x1Pos, y1Pos, menu_items[item_selected], ST7735_WHITE, ST7735_BLACK, 1, 50, 120);  // Adjust windowSize as needed
+    scrollTextHorizontal(x1Pos, y1Pos, menu_items[item_selected], selectedItemColor, selectedItemBackground, 1, 50, scrollWindowSize);  // Adjust windowSize as needed
   } else if (!textScroll) {
     // draw selected item as icon + label
     canvas.setFont(&FreeMono9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
+    canvas.setTextColor(selectedItemColor);
     canvas.setCursor(x1Pos, y1Pos);
 
     // Get the text of the selected item
@@ -214,7 +260,7 @@ void OpenMenuOS::drawMenu(bool images, const char* names...) {
   } else {
     canvas.setFont(&FreeMonoBold9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
+    canvas.setTextColor(selectedItemColor);
     canvas.setCursor(x1Pos, y1Pos);
     canvas.println(menu_items[item_selected]);
   }
@@ -243,24 +289,9 @@ void OpenMenuOS::drawMenu(bool images, const char* names...) {
   if (images) {
     canvas.drawRGBBitmap(5, 59, (uint16_t*)bitmap_icons[item_sel_next], 16, 16);
   }
-
-  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
-    if (y % 2 == 0) {
-      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
-    }
-  }
-  // Draw scrollbar handle
-  int boxHeight = tftHeight / (NUM_MENU_ITEMS);
-  int boxY = boxHeight * item_selected;
-  // Clear previous scrollbar handle
-  canvas.fillRect(tftWidth - 3, boxHeight * item_sel_next, 3, boxHeight, ST7735_BLACK);
-  // Draw new scrollbar handle
-  canvas.fillRect(tftWidth - 3, boxY, 3, boxHeight, ST7735_WHITE);
-
-  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
-    if (y % 2 == 0) {
-      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
-    }
+  if (scrollbar) {
+    // Draw the scrollbar
+    drawScrollbar(item_selected, item_sel_next);
   }
 }
 void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
@@ -279,25 +310,61 @@ void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
 
   checkForButtonPressSubmenu();  // Check for button presses to control the submenu
 
+  if (!scrollbar) {  // If no scrollbar, offset the text from 18px
+    rect_width = tftWidth;
+  }
   // Calculate the position of the rectangle
-  uint16_t rect_x = (tftWidth - rect_width - 4) / 2;                               // Center the rectangle horizontally with a 4-pixel space on the right
-  uint16_t rect_y = (tftHeight - rect_height) / 2;                                 // Center the rectangle vertically
-  canvas.drawFastVLine(153, 29, 22, ST7735_WHITE);                                 // Display the Shadow
-  canvas.drawFastHLine(3, 51, 150, ST7735_WHITE);                                  // Display the Shadow
-  canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, ST7735_WHITE);  // Display the rectangle
+  uint16_t rect_x = 0;
+  uint16_t rect_y = (tftHeight - rect_height) / 2;  // Center the rectangle vertically
+  uint16_t selectedItemColor;
+  uint16_t selectedItemBackground;
+  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text. Change it by setting old text's color to white? (May be slower and more complicated??)
+  canvas.fillRoundRect(rect_x + 1, rect_y - 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+  canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
 
+  switch (menuStyle) {
+    case 0:
+      if (digitalRead(BUTTON_SELECT_PIN) == HIGH && buttonAnimation) {
+        canvas.drawRoundRect(rect_x + 1, rect_y + 1, rect_width - 2, rect_height - 1, 4, selectionColor);  // Display the rectangle
+      } else {
+        if (!scrollbar) {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(tftWidth - 2, 29, 22, selectionColor);                        // Display the inside part
+          canvas.drawFastVLine(tftWidth, 29, 22, selectionColor);                            // Display the Shadow
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the inside part
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the Shadow
+        } else {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width - 2, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(rect_width - 4, rect_y + 2, 22, selectionColor);                  // Display the inside part
+          canvas.drawFastVLine(rect_width - 3, rect_y + 2, 22, selectionColor);                  // Display the Shadow
+          canvas.drawFastHLine(3, 51, 148, selectionColor);                                      // Display the inside part
+          canvas.drawFastHLine(3, 52, 148, selectionColor);                                      // Display the Shadow
+        }
+      }
+      selectedItemColor = ST7735_WHITE;
+      selectedItemBackground = ST7735_BLACK;
+      break;
+    case 1:
+      canvas.fillRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle
+      selectedItemColor = ST7735_BLACK;
+      selectedItemBackground = selectionColor;
+
+      break;
+  }
   int xPos = 30;   // X Position of text 0
   int yPos = 17;   // Y Position of text 0
   int x1Pos = 30;  // X Position of text 1
   int y1Pos = 44;  // Y Position of text 1
   int x2Pos = 30;  // X Position of text 2
   int y2Pos = 70;  // Y Position of text 2
+  int scrollWindowSize = 120;
 
-  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text
-  canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
-  canvas.fillRoundRect(rect_x + 1, rect_y + 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
-
-
+  if (!images) {  // If no image, offset the text from 18px
+    xPos -= 18;
+    x1Pos -= 18;
+    x2Pos -= 18;
+    scrollWindowSize += 18;
+  }
   // draw previous item as icon + label
   canvas.setFont(&FreeMono9pt7b);
   canvas.setTextSize(1);
@@ -323,12 +390,12 @@ void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
   if (strlen(submenu_items[item_selected_submenu]) > MAX_ITEM_LENGTH_NOT_SCROLLING && textScroll) {
     tft.setFont(&FreeMonoBold9pt7b);  // Here, We don't use "canvas." because when using it, the calculated value in the "scrollTextHorizontal" function is wrong but not with "tft." #bug
     canvas.setFont(&FreeMonoBold9pt7b);
-    scrollTextHorizontal(x1Pos, y1Pos, submenu_items[item_selected_submenu], ST7735_WHITE, ST7735_BLACK, 1, 50, 120);  // Adjust windowSize as needed
+    scrollTextHorizontal(x1Pos, y1Pos, submenu_items[item_selected_submenu], selectedItemColor, selectedItemBackground, 1, 50, 120);  // Adjust windowSize as needed
   } else if (!textScroll) {
     // draw selected item as icon + label
     canvas.setFont(&FreeMono9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
+    canvas.setTextColor(selectedItemColor);
     canvas.setCursor(x1Pos, y1Pos);
 
     // Get the text of the selected item
@@ -345,7 +412,7 @@ void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
   } else {
     canvas.setFont(&FreeMonoBold9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
+    canvas.setTextColor(selectedItemColor);
     canvas.setCursor(x1Pos, y1Pos);
     canvas.println(submenu_items[item_selected_submenu]);
   }
@@ -374,26 +441,12 @@ void OpenMenuOS::drawSubmenu(bool images, const char* names...) {
     canvas.drawRGBBitmap(5, 59, (uint16_t*)bitmap_icons[item_sel_next_submenu], 16, 16);
   }
 
-  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
-    if (y % 2 == 0) {
-      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
-    }
-  }
-  // Draw scrollbar handle
-  int boxHeight = tftHeight / (NUM_SUBMENU_ITEMS);
-  int boxY = boxHeight * item_selected_submenu;
-  // Clear previous scrollbar handle
-  canvas.fillRect(tftWidth - 3, boxHeight * item_sel_next_submenu, 3, boxHeight, ST7735_BLACK);
-  // Draw new scrollbar handle
-  canvas.fillRect(tftWidth - 3, boxY, 3, boxHeight, ST7735_WHITE);
-
-  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
-    if (y % 2 == 0) {
-      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
-    }
+  if (scrollbar) {
+    // Draw the scrollbar
+    drawScrollbar(item_selected_submenu, item_sel_next_submenu);
   }
 }
-void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text is flickering (only in settings) #bug
+void OpenMenuOS::drawSettingMenu(const char* items...) {  // The scrolling text is flickering (only in settings) #bug
   NUM_SETTINGS_ITEMS = 1;
   va_list args;
   va_start(args, items);
@@ -416,21 +469,59 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
     button_up_clicked_settings = 0;
   }
 
-  uint16_t rect_x = (tftWidth - rect_width) / 2;                                   // Center the rectangle horizontally with a 4-pixel space on the right
-  uint16_t rect_y = (tftHeight - rect_height) / 2;                                 // Center the rectangle vertically
-  canvas.drawFastVLine(155, 29, 22, ST7735_WHITE);                                 // Display the Shadow
-  canvas.drawFastHLine(3, 51, 150, ST7735_WHITE);                                  // Display the Shadow
-  canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, ST7735_WHITE);  // Display the rectangle
+  // Calculate the position of the rectangle
+  uint16_t rect_x = 0;
+  uint16_t rect_y = (tftHeight - rect_height) / 2;  // Center the rectangle vertically
 
-  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+  uint16_t selectedItemColor;
+  uint16_t selectedItemBackground;
+
+  canvas.fillRoundRect(rect_x + 1, rect_y - 25, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);  // Remove Old Text. Change it by setting old text's color to white? (May be slower and more complicated??)
+  canvas.fillRoundRect(rect_x + 1, rect_y - 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
   canvas.fillRoundRect(rect_x + 1, rect_y + 27, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
-  canvas.fillRoundRect(rect_x + 1, rect_y + 1, rect_width - 3, rect_height - 3, 4, ST7735_BLACK);
+
+  switch (menuStyle) {
+    case 0:
+      if (digitalRead(BUTTON_SELECT_PIN) == HIGH && buttonAnimation) {
+        canvas.drawRoundRect(rect_x + 1, rect_y + 1, rect_width - 2, rect_height - 1, 4, selectionColor);  // Display the rectangle
+      } else {
+        if (!scrollbar) {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(tftWidth - 2, 29, 22, selectionColor);                        // Display the inside part
+          canvas.drawFastVLine(tftWidth, 29, 22, selectionColor);                            // Display the Shadow
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the inside part
+          canvas.drawFastHLine(3, 51, tftWidth - 4, selectionColor);                         // Display the Shadow
+        } else {
+          canvas.drawRoundRect(rect_x, rect_y, rect_width - 2, rect_height, 4, selectionColor);  // Display the rectangle || The "-2" should be determined dynamicaly
+          canvas.drawFastVLine(rect_width - 4, rect_y + 2, 22, selectionColor);                  // Display the inside part
+          canvas.drawFastVLine(rect_width - 3, rect_y + 2, 22, selectionColor);                  // Display the Shadow
+          canvas.drawFastHLine(3, 51, 148, selectionColor);                                      // Display the inside part
+          canvas.drawFastHLine(3, 52, 148, selectionColor);                                      // Display the Shadow
+        }
+      }
+      selectedItemColor = ST7735_WHITE;
+      selectedItemBackground = ST7735_BLACK;
+      break;
+    case 1:
+      canvas.fillRoundRect(rect_x, rect_y, rect_width, rect_height, 4, selectionColor);  // Display the rectangle
+      selectedItemColor = ST7735_BLACK;
+      selectedItemBackground = selectionColor;
+
+      break;
+  }
+  int xPos = 10;   // X Position of text 0
+  int yPos = 17;   // Y Position of text 0
+  int x1Pos = 10;  // X Position of text 1
+  int y1Pos = 44;  // Y Position of text 1
+  int x2Pos = 10;  // X Position of text 2
+  int y2Pos = 70;  // Y Position of text 2
+  int scrollWindowSize = 100;
 
   // draw previous item as icon + label
   canvas.setFont(&FreeMono9pt7b);
   canvas.setTextSize(1);
   canvas.setTextColor(ST7735_WHITE);
-  canvas.setCursor(10, 17);
+  canvas.setCursor(xPos, yPos);
 
   // Get the text of the previous item
   String previousItem = menu_items_settings[item_selected_settings_previous];
@@ -457,13 +548,13 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
   if (strlen(menu_items_settings[item_selected_settings]) > MAX_SETTING_ITEM_LENGTH_NOT_SCROLLING && textScroll) {
     tft.setFont(&FreeMonoBold9pt7b);  // Here, We don't use "canvas." because when using it, the calculated value in the "scrollTextHorizontal" function is wrong but not with "tft." #bug
     canvas.setFont(&FreeMonoBold9pt7b);
-    scrollTextHorizontal(10, 44, menu_items_settings[item_selected_settings], ST7735_WHITE, ST7735_BLACK, 1, 50, 100);  // Adjust windowSize as needed
+    scrollTextHorizontal(x1Pos, y1Pos, menu_items_settings[item_selected_settings], selectedItemColor, selectedItemBackground, 1, 50, scrollWindowSize);  // Adjust windowSize as needed
   } else if (!textScroll) {
     // draw selected item as icon + label
     canvas.setFont(&FreeMono9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
-    canvas.setCursor(10, 44);
+    canvas.setTextColor(selectedItemColor);
+    canvas.setCursor(x1Pos, y1Pos);
 
     // Get the text of the selected item
     String selectedItem = menu_items_settings[item_selected_settings];
@@ -479,8 +570,8 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
   } else {
     canvas.setFont(&FreeMonoBold9pt7b);
     canvas.setTextSize(1);
-    canvas.setTextColor(ST7735_WHITE);
-    canvas.setCursor(10, 44);
+    canvas.setTextColor(selectedItemColor);
+    canvas.setCursor(x1Pos, y1Pos);
     canvas.println(menu_items_settings[item_selected_settings]);
   }
 
@@ -498,7 +589,7 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
   canvas.setFont(&FreeMono9pt7b);
   canvas.setTextSize(1);
   canvas.setTextColor(ST7735_WHITE);
-  canvas.setCursor(10, 70);
+  canvas.setCursor(x2Pos, y2Pos);
 
   // Get the text of the next item
   String nextItem = menu_items_settings[item_selected_settings_next];
@@ -522,6 +613,8 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
     }
   }
 
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
     if (previousButtonState == LOW && !buttonPressProcessed) {
       if (item_selected_settings == 0) {
@@ -593,7 +686,52 @@ void OpenMenuOS::drawSettingMenu(const char* items...) { // The scrolling text i
     previousButtonState = HIGH;
   } else {
     previousButtonState = LOW;
-    buttonPressProcessed = false;  // Reinitialiser la variable de controle lorsque le bouton est relache
+    buttonPressProcessed = false;  // Reset the control variable when the button is not pressed anymore
+  }
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // Used to fix the issue where the item in the settings toggles when we try to get out of the settings, but NOT WORKING RN #bug
+  // static bool longPress = false;
+
+  // if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
+  //   if (button_select_clicked == 0 && !longPress) {
+  //     button_select_clicked = 1;
+  //     select_button_press_time = millis();  // Start measuring button press time
+  //   } else {
+  //     // Button still pressed, check for long press
+  //     if (current_screen == 1 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
+  //       longPress = true;
+  //       if (!longPress) {  // This condition is redundant and can be removed
+  //         current_screen = 0;
+  //       }
+  //     }
+  //   }
+  // } else if (digitalRead(BUTTON_SELECT_PIN) == LOW) {
+  //   if (button_select_clicked == 1 && !longPress) {
+  //     if (current_screen == 1) {
+
+  //       // Toggle boolean based on the selected item
+  //       if (item_selected_settings >= 0 && item_selected_settings < 10) {  // Ensure item_selected_settings is within bounds
+  //         menu_items_settings_bool[item_selected_settings] = !menu_items_settings_bool[item_selected_settings];
+  //         // Example code for handling additional actions based on the boolean state
+  //         if (item_selected_settings == 0) {
+  //           digitalWrite(TFT_BL_PIN, menu_items_settings_bool[0] ? LOW : HIGH);  // Toggle TFT backlight pin based on boolean state
+  //         }
+  //         saveToEEPROM();
+  //       }
+  //     }
+  //     button_select_clicked = 0;  // Reset the button state
+  //   } else if (button_select_clicked == 1 && longPress) {
+  //     // Long press action already handled, reset the button state
+  //     button_select_clicked = 0;
+  //   }
+  //   longPress = false;  // Reset longPress when button is released
+  // }
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  if (scrollbar) {
+    // Draw the scrollbar
+    drawScrollbar(item_selected_settings, item_selected_settings_next);
   }
 }
 void OpenMenuOS::drawTileMenu(int rows, int columns, int tile_color) {
@@ -654,6 +792,179 @@ void OpenMenuOS::drawTileMenu(int rows, int columns, int tile_color) {
     canvas.setFont(nullptr);
   }
 }
+void OpenMenuOS::redirectToMenu(int screen, int item) {
+  current_screen = screen;
+  if (current_screen == 0) {
+    item_selected = item;
+  } else if (current_screen == 1) {
+    item_selected_submenu = item;
+  }
+}
+void OpenMenuOS::drawPopup(char* message, bool& clicked) {
+  static bool selectClicked = false;
+  if (digitalRead(BUTTON_SELECT_PIN) == HIGH && !selectClicked) {
+    selectClicked = true;
+    clicked = true;
+  }
+
+  if (!selectClicked) {
+    int screenWidth = getTftWidth();
+    int screenHeight = getTftHeight();
+    int buttonWidth = screenWidth / 3;
+    int buttonHeight = screenHeight / 4;
+    int buttonX = (screenWidth - buttonWidth) / 2;
+    int buttonY = screenHeight - buttonHeight - 10;  // Adjust the position as needed
+    const char* OkText = "Ok";
+    // Draw the background of the popup
+    canvas.fillRoundRect(4, 4, screenWidth - 8, screenHeight - 8, 5, ST7735_BLUE);
+
+    // Calculate message area dimensions
+    int messageAreaWidth = screenWidth - 40;
+    int messageAreaHeight = buttonY - 40;  // Gap between button and top of popup
+    int messageAreaX = (screenWidth - messageAreaWidth) / 2;
+    int messageAreaY = 20;  // Adjust the position as needed
+
+    // Draw the message
+    uint16_t messageWidth, messageHeight;
+    int16_t messageX, messageY;
+    canvas.getTextBounds(message, 0, 0, &messageX, &messageY, &messageWidth, &messageHeight);
+
+
+    if (messageAreaWidth > screenWidth - 8) {
+      // Calculate the maximum number of characters per line based on font width
+      uint16_t letterWidth, letterHeight;
+      canvas.getTextBounds("M", 0, 0, 0, 0, &letterWidth, &letterHeight);
+      int maxLength = floor((screenWidth - 8) / letterWidth) - 1;
+
+      // Create two variables for the split message parts
+      char firstPart[maxLength + 1];                     // +1 to include the null terminator
+      char secondPart[strlen(message) - maxLength + 1];  // +1 to include the null terminator
+
+      // Copy the first part of the message
+      strncpy(firstPart, message, maxLength);
+      firstPart[maxLength] = '\0';  // Null-terminate the first part
+
+      // Calculate the width of the first part of the message
+      uint16_t firstPartWidth, firstPartHeight;
+      canvas.getTextBounds(firstPart, 0, 0, &messageX, &messageY, &firstPartWidth, &firstPartHeight);
+
+      // Calculate the position to center the first part of the message
+      messageX = messageAreaX + (messageAreaWidth - firstPartWidth) / 2;
+      messageY = messageAreaY + (messageAreaHeight - messageHeight) / 2;
+
+      // Draw the first part of the message
+      canvas.setCursor(messageX, messageY);
+      canvas.setFont(&FreeMono9pt7b);
+      canvas.setTextSize(1);
+      canvas.setTextColor(ST7735_WHITE);
+      canvas.print(firstPart);
+
+      // Check if there's a second part of the message
+      if (strlen(message) > maxLength) {
+        // Copy the second part of the message
+        strcpy(secondPart, message + maxLength);
+
+        // Adjust the Y position for the second part of the message
+        messageY += firstPartHeight;  // Move down by the height of the first part
+
+        // Calculate the position to center the second part of the message
+        messageX = messageAreaX + (messageAreaWidth - firstPartWidth) / 2;
+
+        // Draw the second part of the message
+        canvas.setCursor(messageX, messageY);
+        canvas.print(secondPart);
+      }
+    } else {
+      // If the message fits within the screen width, draw it normally
+      messageX = messageAreaX + (messageAreaWidth - messageWidth) / 2;
+      messageY = messageAreaY + (messageAreaHeight - messageHeight) / 2;
+
+      canvas.setCursor(messageX, messageY);
+      canvas.setFont(&FreeMono9pt7b);
+      canvas.setTextSize(1);
+      canvas.setTextColor(ST7735_WHITE);
+      canvas.print(message);
+    }
+
+    // Draw the "Ok" button
+
+    uint16_t buttonTextWidth, buttonTextHeight;
+    int16_t buttonTextX, buttonTextY;
+    canvas.getTextBounds(OkText, 0, 0, &buttonTextX, &buttonTextY, &buttonTextWidth, &buttonTextHeight);
+    int buttonCenterX = buttonX + (buttonWidth - buttonTextWidth) / 2;
+    int buttonCenterY = buttonY + (buttonHeight - buttonTextHeight) / 2 + buttonTextHeight;
+    canvas.fillRoundRect(buttonX, buttonY, buttonWidth, buttonHeight, 5, ST7735_GREEN);
+    canvas.setCursor(buttonCenterX, buttonCenterY);  // Set the cursor to the center
+    canvas.setFont(&FreeMono9pt7b);
+    canvas.setTextSize(1);
+    canvas.setTextColor(ST7735_WHITE);
+    canvas.print(OkText);
+  }
+}
+// void OpenMenuOS::drawPopup(const char* message) {
+//   int screenWidth = getTftWidth();
+//   int screenHeight = getTftHeight();
+//   int buttonWidth, buttonHeight;
+//   const char* OkText = "Ok";
+
+//   // Calculate button dimensions
+//   uint16_t buttonTextWidth, buttonTextHeight;
+//   int16_t buttonTextX, buttonTextY;
+//   canvas.getTextBounds(OkText, 0, 0, &buttonTextX, &buttonTextY, &buttonTextWidth, &buttonTextHeight);
+//   buttonWidth = buttonTextWidth + 16;
+//   buttonHeight = buttonTextHeight + 8;
+
+//   // Calculate button position
+//   int buttonX = (screenWidth - buttonWidth) / 2;
+//   int buttonY = screenHeight - buttonHeight - 10;  // Adjust the position as needed
+
+//   // Draw the background of the popup
+//   canvas.fillRoundRect(4, 4, screenWidth - 8, screenHeight - 8, 5, ST7735_BLUE);
+
+//   // Calculate message area dimensions
+//   int messageAreaWidth = screenWidth - 40;
+//   int messageAreaHeight = buttonY - 40;  // Gap between button and top of popup
+//   int messageAreaX = (screenWidth - messageAreaWidth) / 2;
+//   int messageAreaY = 20;  // Adjust the position as needed
+
+//   // Draw the message
+//   uint16_t messageWidth, messageHeight;
+//   int16_t messageX, messageY;
+//   canvas.getTextBounds(message, 0, 0, &messageX, &messageY, &messageWidth, &messageHeight);
+//   messageX = messageAreaX + (messageAreaWidth - messageWidth) / 2;
+//   messageY = messageAreaY + (messageAreaHeight - messageHeight) / 2;
+//   canvas.setCursor(messageX, messageY);
+//   canvas.setFont(&FreeMono9pt7b);
+//   canvas.setTextSize(1);
+//   canvas.setTextColor(ST7735_WHITE);
+//   canvas.print(message);
+
+//   // Draw the "Ok" button
+//   int buttonCenterX = buttonX + (buttonWidth - buttonTextWidth) / 2;
+//   int buttonCenterY = buttonY + (buttonHeight - buttonTextHeight) / 2 + buttonTextHeight;
+//   canvas.fillRoundRect(buttonX, buttonY, buttonWidth, buttonHeight, 5, ST7735_GREEN);
+//   canvas.setCursor(buttonCenterX, buttonCenterY);  // Set the cursor to the center
+//   canvas.setFont(&FreeMono9pt7b);
+//   canvas.setTextSize(1);
+//   canvas.setTextColor(ST7735_WHITE);
+//   canvas.print(OkText);
+// }
+void OpenMenuOS::drawScrollbar(int selectedItem, int nextItem) {
+  // Draw scrollbar handle
+  int boxHeight = tftHeight / (NUM_MENU_ITEMS);
+  int boxY = boxHeight * selectedItem;
+  // Clear previous scrollbar handle
+  canvas.fillRect(tftWidth - 3, boxHeight * nextItem, 3, boxHeight, ST7735_BLACK);
+  // Draw new scrollbar handle
+  canvas.fillRect(tftWidth - 3, boxY, 3, boxHeight, ST7735_WHITE);
+
+  for (int y = 0; y < tftHeight; y++) {  // Display the Scrollbar
+    if (y % 2 == 0) {
+      canvas.drawPixel(tftWidth - 2, y, ST7735_WHITE);
+    }
+  }
+}
+
 // Function to scroll text horizontally on the display within a specified window size
 void OpenMenuOS::scrollTextHorizontal(int16_t x, int16_t y, const char* text, uint16_t textColor, uint16_t bgColor, uint8_t textSize, uint16_t delayTime, uint16_t windowSize) {
   static int16_t xPos1 = x + (windowSize / 3);
@@ -667,7 +978,7 @@ void OpenMenuOS::scrollTextHorizontal(int16_t x, int16_t y, const char* text, ui
   int16_t x1, y1;
   tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);  // Here, We don't use "canvas.getTextBounds" because when using it, the calculated value is wrong but not with "tft." #bug
   CHAR_WIDTH = w / strlen(text);                    // Width of each character
-  CHAR_SPACING = ceil(CHAR_WIDTH / 7);  // Spacing between characters
+  CHAR_SPACING = ceil(CHAR_WIDTH / 7);              // Spacing between characters
 
   // Calculate the next position for text 1
   unsigned long currentMillis1 = millis();
@@ -704,9 +1015,52 @@ void OpenMenuOS::displayText(const char* text, int16_t xPos, int16_t x, int16_t 
     }
   }
 }
-void OpenMenuOS::setTextScroll(bool x) {
+void OpenMenuOS::setTextScroll(bool x = true) {
   textScroll = x;
 }
+void OpenMenuOS::setButtonAnimation(bool x = true) {
+  buttonAnimation = x;
+}
+void OpenMenuOS::setMenuStyle(int style) {
+  menuStyle = style;
+}
+void OpenMenuOS::setScrollbar(bool x = true) {
+  scrollbar = x;
+}
+void OpenMenuOS::setSelectionColor(uint16_t color = ST7735_WHITE) {
+  selectionColor = color;
+}
+void OpenMenuOS::useStylePreset(char* preset) {
+  int presetNumber = 0;  // Initialize with the default preset number
+
+  // Convert the preset name to lowercase for case-insensitive comparison
+  String lowercasePreset = String(preset);
+  lowercasePreset.toLowerCase();
+
+  // Compare the preset name with lowercase versions of the preset names
+  if (lowercasePreset == "default") {
+    presetNumber = 0;
+  } else if (lowercasePreset == "rabbit_r1") {
+    presetNumber = 1;
+  }
+
+  // Apply the preset based on the preset number
+  switch (presetNumber) {
+    case 0:
+      setMenuStyle(0);
+      break;
+    case 1:
+      setScrollbar(false);  // Disable scrollbar
+      setMenuStyle(1);
+      setSelectionColor(0xfa60);  // Setting the selection rectangle's color to Rabbit R1's Orange/Leuchtorange
+      break;
+    default:
+      // Handle invalid presets
+      // Optionally, you can log an error or take other actions here
+      break;
+  }
+}
+
 
 void OpenMenuOS::printMenuToSerial() {
   Serial.println("Menu Items:");
@@ -743,24 +1097,29 @@ void OpenMenuOS::checkForButtonPress() {
       button_down_clicked = 0;
     }
   }
+
   if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
-    if (button_select_clicked == 0) {
+    if (button_select_clicked == 0 && !long_press_handled) {
       select_button_press_time = millis();  // Start measuring button press time
       button_select_clicked = 1;
-    } else if (current_screen == 1 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
-      current_screen = 0;
-      delay(350);
+      long_press_handled = false;  // Reset the long press handled flag
+    } else {
+      // Button still pressed, check for long press
+      if (current_screen == 1 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
+        if (!long_press_handled) {  // Check if long press action has been handled
+          current_screen = 0;
+          long_press_handled = true;  // Set the long press handled flag
+        }
+      }
     }
   } else if (digitalRead(BUTTON_SELECT_PIN) == LOW) {
     if (button_select_clicked == 1) {
-      if (current_screen == 0) {
+      if (current_screen == 0 && !long_press_handled) {
         current_screen = 1;
       }
-      button_select_clicked = 0;  // Reset the button state
+      button_select_clicked = 0;   // Reset the button state
+      long_press_handled = false;  // Reset the long press handled flag when the button is released
     }
-  }
-  if ((digitalRead(BUTTON_SELECT_PIN) == LOW) && (button_select_clicked == 1)) {  // unclick
-    button_select_clicked = 0;
   }
 
   // set correct values for the previous and next items
@@ -799,24 +1158,29 @@ void OpenMenuOS::checkForButtonPressSubmenu() {
   if ((digitalRead(BUTTON_DOWN_PIN) == LOW) && (button_down_clicked == 1)) {  // unclick
     button_down_clicked = 0;
   }
+
   if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
-    if (button_select_clicked == 0) {
+    if (button_select_clicked == 0 && !long_press_handled) {
       select_button_press_time = millis();  // Start measuring button press time
       button_select_clicked = 1;
-    } else if (current_screen == 2 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
-      current_screen = 1;
-      delay(350);
+      long_press_handled = false;  // Reset the long press handled flag
+    } else {
+      // Button still pressed, check for long press
+      if (current_screen == 2 && (millis() - select_button_press_time >= SELECT_BUTTON_LONG_PRESS_DURATION)) {
+        if (!long_press_handled) {  // Check if long press action has been handled
+          current_screen = 1;
+          long_press_handled = true;  // Set the long press handled flag
+        }
+      }
     }
   } else if (digitalRead(BUTTON_SELECT_PIN) == LOW) {
     if (button_select_clicked == 1) {
-      if (current_screen == 1) {
+      if (current_screen == 1 && !long_press_handled) {
         current_screen = 2;
       }
-      button_select_clicked = 0;  // Reset the button state
+      button_select_clicked = 0;   // Reset the button state
+      long_press_handled = false;  // Reset the long press handled flag when the button is released
     }
-  }
-  if ((digitalRead(BUTTON_SELECT_PIN) == LOW) && (button_select_clicked == 1)) {  // unclick
-    button_select_clicked = 0;
   }
 
   // set correct values for the previous and next items
