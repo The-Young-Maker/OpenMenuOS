@@ -249,7 +249,7 @@ Example Use:
 
 `menu.setButtonAnimation(false);`
 
-#### Note: The default value is true.
+#### Note: Button animation is not available with style "1"
 
 ### setMenuStyle()
 
