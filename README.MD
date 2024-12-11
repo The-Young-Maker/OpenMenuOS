@@ -62,12 +62,17 @@ Example:
 ```
 menu.begin(
 Display type, 
+bool invert (Default false)
 )
 ```
 
 Example Use: 
 
 `menu.begin(INITR_GREENTAB);`
+
+
+**Some displays might show inverted colors, this can be fixed using the invert parameter:**
+`menu.begin(INITR_GREENTAB, true);`
 
 
 Initializes the OpenMenuOS library. Call this function in the setup() function of your sketch.
