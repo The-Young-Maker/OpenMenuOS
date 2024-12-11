@@ -109,7 +109,7 @@ OpenMenuOS::OpenMenuOS(int btn_up, int btn_down, int btn_sel, int tft_bl, int cs
   TFT_BL_PIN = tft_bl;
 }
 
-void OpenMenuOS::begin(uint8_t display, bool invert) {  // Display type
+void OpenMenuOS::begin(uint8_t display, bool invert) {  // Display type and invert color (optional)
   // Set up display
   tft.initR(display);
   tft.invertDisplay(invert);
