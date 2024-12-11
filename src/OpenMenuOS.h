@@ -27,7 +27,7 @@ public:
 
   OpenMenuOS(int btn_up, int btn_down, int btn_sel, int tft_bl, int cs, int dc, int rst);  // BTN_UP pin, BTN_DOWN pin, BTN_SEL pin, CS pin, DC pin, RST pin, Menu Items
 
-  void begin(uint8_t display);  // Display type
+  void begin(uint8_t display, bool invert=false);  // Display type
   void loop();
 
   void drawMenu(bool images, const char* names...);
