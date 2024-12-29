@@ -6,7 +6,7 @@
 
 ## Introduction
 
-OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266 (and soon other microcontrollers!), designed to simplify the implementation of user interfaces in various applications. This documentation provides an overview of the OpenMenuOS library, including its features, usage, and customization options.
+OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266, designed to simplify the implementation of user interfaces in various applications. This documentation provides an overview of the OpenMenuOS library, including its features, usage, and customization options.
 
 ## Features
 
@@ -19,7 +19,6 @@ OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266 (and soo
 - Different menu styles
 - Redirection to other parts of the menu (e.g., Settings)
 - Functionality to draw popups
-
 
 ## Getting Started
 
@@ -37,7 +36,9 @@ Include the `OpenMenuOS.h` header file in your sketch to access the OpenMenuOS f
 
 To begin using OpenMenuOS, create an instance of the OpenMenuOS class. Specify the button pins (UP, DOWN, SELECT), TFT backlight pin, and display control pins (CS, DC, RST).
 
-#### NOTE : For all the documentation, I will use `menu` as the constructor
+#### NOTE: OpenMenuOS relies on the TFT_eSPI library for display handling. Ensure your display settings are properly configured according to the TFT_eSPI library's documentation.
+
+#### NOTE: For all the documentation, I will use `menu` as the constructor
 
 Example:
 ```
@@ -46,34 +47,25 @@ OpenMenuOS menu(
   Button DOWN Pin,
   Button SELECT Pin,
   TFT Backlight Pin,
-  Display CS Pin,
-  Display DC Pin,
-  Display RST Pin
 )
 ```
 
 Example Use:
 
-`OpenMenuOS menu(10, 11, 5, 12, 4, 21, 22);`
+`OpenMenuOS menu(10, 11, 5, 12);`
 
 ### begin()
 
 Example:
 ```
 menu.begin(
-Display type, 
-bool invert (Default false)
+Display rotation, 
 )
 ```
 
 Example Use: 
 
-`menu.begin(INITR_GREENTAB);`
-
-
-**Some displays might show inverted colors, this can be fixed using the invert parameter:**
-`menu.begin(INITR_GREENTAB, true);`
-
+`menu.begin(1);`
 
 Initializes the OpenMenuOS library. Call this function in the setup() function of your sketch.
 
@@ -383,9 +375,10 @@ In addition to menu icons, OpenMenuOS allows for the integration of custom image
 ## Known Bug
 
 1. The scrolling text in the settings is flickering when not supposed.
+2. When long pressing the select button to go back, menu item scrolls when they shouldn't
 
 The know bugs are also labeled as "#bug" in the code. Just do "CTRL+F" and search for "#bug"
 
 ## Additional Notes
-The library is still in beta. If you encounter any bugs or if you have any suggestion, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
+The library is a work in progress. If you encounter any bugs or if you have any suggestion, please create an issue on the [OpenMenuOS GitHub repository](https://github.com/The-Young-Maker/OpenMenuOS).
 Ensure that you have the necessary dependencies installed and configured in your Arduino IDE.
