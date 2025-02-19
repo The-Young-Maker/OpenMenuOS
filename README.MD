@@ -4,6 +4,9 @@
 
 #### If you have any suggestions to enhance the library or encounter any bugs, please don't hesitate to create a new issue. Your contributions play a vital role in shaping the future of this library.
 
+
+#### Currently, this library was only tested on ST7735 0.96" 160x80 Color TFT Display
+
 ## Introduction
 
 OpenMenuOS is a versatile open-source menu system for ESP32 and ESP8266, designed to simplify the implementation of user interfaces in various applications. This documentation provides an overview of the OpenMenuOS library, including its features, usage, and customization options.
