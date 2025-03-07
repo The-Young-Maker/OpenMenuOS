@@ -5,7 +5,7 @@
 #### If you have any suggestions to enhance the library or encounter any bugs, please don't hesitate to create a new issue. Your contributions play a vital role in shaping the future of this library.
 
 
-#### Currently, this library was only tested on ST7735 0.96" 160x80 Color TFT Display
+#### This library has been tested on ST7735 and ST7789 Color TFT Displays but should work seamlessly with any display supported by the TFT_eSPI library.
 
 ## Introduction
 
