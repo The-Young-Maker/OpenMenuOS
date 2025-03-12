@@ -1,3 +1,4 @@
+![OpenMenuOS GIF Demo](images/OpenMenuOS_GIF.gif)
 # OpenMenuOS Documentation
 
 #### This library is continuously evolving, with numerous features and bug fixes in the pipeline. Stay tuned for exciting updates!
