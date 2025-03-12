@@ -1,4 +1,10 @@
-![OpenMenuOS GIF Demo](images/OpenMenuOS_GIF.gif)
+![OpenMenuOS GIF Demo](images/OpenMenuOS_GIF.gif)  
+This demo was recorded using the **"Screenshot"** feature provided by TFT_eSPI.  
+The visible lines on the recording are not present on the actual display; they are likely caused by noise during data transmission from the display to the computer.  
+
+Additionally, while the demo may appear laggy, this is due to the low recording frame rate. The display could not refresh while the screenshot data was being transmitted.
+
+
 # OpenMenuOS Documentation
 
 #### This library is continuously evolving, with numerous features and bug fixes in the pipeline. Stay tuned for exciting updates!
