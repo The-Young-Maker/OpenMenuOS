@@ -1,3 +1,7 @@
+> ⚠️ **Warning: Version 3 is Coming Soon**  
+> A major update to the library (v3) is on the way, bringing significant changes that may break compatibility with the current version.  
+> It's recommended to hold off on using the current version for new projects. Version 3 should be ready within 2 months or sooner.  
+
 ![OpenMenuOS GIF Demo](images/OpenMenuOS_GIF.gif)  
 This demo was recorded using the **"Screenshot"** feature provided by TFT_eSPI.  
 The visible lines on the recording are not present on the actual display; they are likely caused by noise during data transmission from the display to the computer.  
