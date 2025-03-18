@@ -18,7 +18,8 @@ Here are the significant updates and improvements:
 - Replaced the old boolean-only settings system with object-based settings.  
   - Supports a variety of data types: options, ranges, and booleans.  
   - Includes default value support (overridden when values are changed in EEPROM).  
-  - Note: Only booleans are fully functional; range settings are partially implemented.  
+  - Note: Only booleans are fully functional; range and option settings are partially implemented and do not currently work.  
+.  
 
 #### **New Features**  
 - Added a function to retrieve the library version.  
