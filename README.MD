@@ -1,57 +1,83 @@
 # OpenMenuOS Library Documentation
 
 ## **What's New in v3.1.0 (2025/06/15)?**
+
 ### **Revolutionary PopupManager System**
-- **Professional PopupManager** with 5 distinct popup types: Info, Success, Warning, Error, and Question
-- **Advanced popup features**: Auto-close functionality, custom colors, icons, and word wrapping
-- **Non-blocking operation** with proper button debouncing and input validation
-- **Encoder support** for popup navigation: rotate to select buttons, press to confirm
-- **Visual feedback** with button selection indicators and semi-transparent overlays
-- **Input blocking** ensures clicks don't reach underlying screens when popups are active
+- **Professional PopupManager** with 5 distinct popup types: Info, Success, Warning, Error, and Question  
+- **Advanced popup features**: Auto-close functionality for success messages, custom colors, icons, and automatic word wrapping  
+- **Non-blocking operation** with proper button debouncing and input validation  
+- **Encoder support** for popup navigation: rotate to select buttons, press to confirm  
+- **Visual feedback** with button selection indicators and semi-transparent overlays  
+- **Input blocking** ensures clicks don't reach underlying screens when popups are active  
 
 ### **Enhanced User Experience**
-- **Professional visual design** with shadows, rounded corners, and color-coded popup types
-- **Improved button handling** with proper press/release detection preventing false triggers
-- **Optimized display performance** with frame comparison and efficient canvas management
-- **Better input isolation** between popups and menu systems
+- **Improved button handling** with proper press/release detection preventing false triggers  
+- **Optimized display performance** with frame comparison and efficient canvas management  
+- **Better input isolation** between popups and menu systems  
 
 ### **Code Quality Improvements**
-- **Bug fixes**: Canvas sprite creation, encoder validation, null pointer checks
-- **Performance optimizations**: ScrollTextHorizontal functions, calculateMaxCharacters algorithm
-- **Memory efficiency**: Enhanced drawCanvasOnTFT with intelligent frame comparison
-- **Robust error handling** for edge cases and invalid inputs
+- **Bug fixes**: Canvas sprite creation, encoder pin validation, self-assignment fixes, null pointer checks  
+- **Performance optimizations**: ScrollTextHorizontal functions enhanced with sprite caching, calculateMaxCharacters improved with binary search algorithm  
+- **Memory efficiency**: Enhanced drawCanvasOnTFT with intelligent frame comparison  
+- **Robust error handling** for edge cases and invalid inputs  
+
+### **Additional v3.1.0 Updates (condensed format due to many small changes and new features!)**
+
+- MenuScreen and SettingsScreen constructors updated to make the title optional  
+- CustomScreen constructor supports optional title definition  
+- Overloaded `addItem` method introduced to use title from `nextScreen` automatically  
+- Added `navigateBack()` function to return to previous screen  
+- Settings system improved to check for duplicate names and types before adding  
+- Function added to reset settings to default (restart required)  
+- Animations can be enabled/disabled via new function  
+- EEPROM saving fixes for global setting objects  
+- Toggle switch flickering bugs fixed  
+- Cleaned and reorganized header (.h) and source (.cpp) files for maintainability  
+- Fixed toggle switch positioning and display bugs  
+- Added function to get parameter value by name  
+- Added style presets setting by number  
+- Added display rotation function  
+- Improved selection rectangle drawing and removed unnecessary variables  
+- Changed default button pins to -1  
+- Settings now use vectors and non-random IDs for EEPROM consistency  
+- Sub-screen support added in settings  
+- Added smooth animations and encoder support throughout the library  
+- Added visual indication for locked settings and unit support for ranges  
+- Various small improvements and bug fixes related to UI and settings handling  
+
+---
 
 ## **What's New in v3.0.0?**
 Here are the significant updates and improvements:
 
 ### **Code Refactoring and Fixes**
-- Variables moved to the private section of the class for better encapsulation and maintainability.
-- Fixed issues with scrollbar height for submenus.
-- Fixed scrolling text issues with non-black background colors.
+- Variables moved to the private section of the class for better encapsulation and maintainability.  
+- Fixed issues with scrollbar height for submenus.  
+- Fixed scrolling text issues with non-black background colors.  
 
 ### **Enhanced Menu System**
-- Menus (main, submenus, and settings) now dynamically adapt to the display size.
-- Unlimited screens and menu levels—replacing the previous limitation of 3 levels.
-- Fixed main menu item scrolling issues when returning from submenus.
+- Menus (main, submenus, and settings) now dynamically adapt to the display size.  
+- Unlimited screens and menu levels—replacing the previous limitation of 3 levels.  
+- Fixed main menu item scrolling issues when returning from submenus.  
 
 ### **Settings Overhaul**
-- Replaced the old boolean-only settings system with object-based settings.
-  - Supports a variety of data types: options, ranges, and booleans.
-  - Includes default value support (overridden when values are changed in EEPROM).
-  - Full functionality for all setting types with proper EEPROM storage (v3.1.0).
+- Replaced the old boolean-only settings system with object-based settings.  
+  - Supports a variety of data types: options, ranges, and booleans.  
+  - Includes default value support (overridden when values are changed in EEPROM).  
+  - Full functionality for all setting types with proper EEPROM storage (v3.1.0).  
 
 ### **New Features**
-- Added a function to retrieve the library version.
-- Added smoother text scrolling.
-- Added the ability to set a boot image.
-- Added font customization options for menus.
+- Added a function to retrieve the library version.  
+- Added smoother text scrolling.  
+- Added the ability to set a boot image.  
+- Added font customization options for menus.  
 
 ### **Storage Handling**
-- Improved storage handling by using `preferences.h` on ESP32 and `EEPROM` on ESP8266.
+- Improved storage handling by using `preferences.h` on ESP32 and `EEPROM` on ESP8266.  
 
 ### **Additional Fixes**
-- Resolved an issue where long-pressing the select button did not correctly return to the last screen.
-- Removed the `tft_bl` argument from the menu instance (can now be set in `TFT_eSPI`'s config).
+- Resolved an issue where long-pressing the select button did not correctly return to the last screen.  
+- Removed the `tft_bl` argument from the menu instance (can now be set in `TFT_eSPI`'s config).  
 
 ![OpenMenuOS GIF Demo](images/OpenMenuOS_GIF.gif)  
 This demo was recorded using the **"Screenshot"** feature provided by TFT_eSPI.  
