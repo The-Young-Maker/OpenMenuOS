@@ -1,151 +1,174 @@
-// 2024/04/06 - V1.4.0
-// Fixed debouncing issue when returning to back menu
-// Added menu button animation when pressed
-// Added a function to redirect to menu
-// Added option to choose between different menu style
-// Added option to enable to disable scrollbar
-// Added option to choose the color of the selection rectangle
-// Added option to choose from preset menu style
+//==============================================================================
+// INCLUDES
+//==============================================================================
+#include "OpenMenuOS.h" // Include the OpenMenuOS library
+#include "images.h"     // Include custom images
 
-// V2.0.0
-// 2024/04/09 - Added option to choose PULLUP or PULLDOWN for the buttons - Possible bugs?
-
-// 2024/04/18
-// Fixed the bug where the backlight was not set at the defined state at boot
-// Centered icon in the colored section of the popup
-
-// 2024/05/03
-// Modified the drawPopup function to have more flexibility
-
-// 2024/05/05
-// Fixed the issue where going back from settings would toggle the selected item. Now, the item is toggled only on short press.
-
-// 2024/05/10
-// Added support for custom images in images.cpp
-
-//2024/05/12
-// Added support for faster scrolling when up/down button is long pressed
-
-// 2024/05/16
-// Changed the display library to TFT_eSPI
-// Added support to take "screenshots" of the display (All rights reserved to Bodmer)
-
-// 2024/05/19
-// Modified the drawing method so that they can be called by "canvas.draw..." instead of "menu.canvas.draw..."
-// Modified instance creation by removing the display pins definition/arguments as they need to be set in the TFT_eSPI User Setup file
-// Modified begin function to accept display rotation as argument
-// Modified the drawing functions to use anti-aliasing to make them smoother
-
-// 2024/05/26
-// Fixed the color variables to make them work with all display
-// Modified the tft height and width variable to get them from TFT_eSPI instead of being static
-
-// 2024/06/03
-// Added option to set scrollbar color
-// Added option to set scrollbar style
-
-// 2024/07/24
-// Solved the bug that made the scrolling text flicker
-
-// V3.0.0
-// 2024/12/31
-// Refactored the code by moving variables to the private section of the class for better encapsulation and maintainability.
-
-// 2025/01/02
-// Fixed the issue where the scrollbar did not have the right height for the submenues
-
-// 2025/03/07
-// Updated the code to make the menus (main, submenu and settings) dynamically adapt to the display size.
-// Added a function to retrieve the library version.
-
-// 2025/03/08
-// Fixed the issue where the scrolling text did not show with background color other than black
-
-// 2025/03/09
-// Refactored the code to use `preferences.h` on ESP32 and `EEPROM` on ESP8266 for improved storage handling.
-// Refactored the code to implement object-based settings, enhancing usability. The new approach supports a variety of data types, including options, ranges, and booleans, and also support default values (overriden when the value is changes in EEPROM) replacing the previous implementation that only supported booleans. Currently, only booleans are fully functional, and the range feature can only increase as it is not fully implemented yet.
-
-// 2025/03/10
-// The library has been upgraded with a completely new screen system.
-// The previous "createSubmenus" function, which was limited to only 3 levels of menus, is no longer used.
-// Now, you can have an unlimited number of screens and menu levels, allowing for more flexibility and scalability!
-
-// This update also changes how menus are handled and fixes the issue where main menu items would unexpectedly scroll
-// when returning from a submenu.
-
-// Improved the text Scroll function to make the text scroll smoother
-// Added a function to let user set a boot image
-
-// 2025/03/11
-// Added functions to let user ability modify the font of the menu
-
-// 2025/03/17
-// Fixed the issue that long pressing the select button did not correctly go back to the last screen and returned to the first screen instead
-// Removed the tft_bl argument from the menu instance as it can already be set in tft_eSPI's config
-
-#include "OpenMenuOS.h"  // Include the OpenMenuOS library
-#include "images.h"
-
-// Create an instance of the OpenMenuOS class with button and display pins
-// Use NULL for buttons you don't have
-OpenMenuOS menu(19, NULL, 2);  // btn_up, btn_down, btn_sel
+//==============================================================================
+// MENU SCREEN DEFINITIONS
+//==============================================================================
+// Create an instance of the OpenMenuOS class with button pins
+// Use -1 for buttons you don't have
+// OpenMenuOS menu(2, 5, 19);  // btn_up, btn_down, btn_sel
+OpenMenuOS menu; // btn_up, btn_down, btn_sel
 
 // Create menu screens
 MenuScreen mainMenu("Main Menu");
 MenuScreen testScreen("Test Menu");
-CustomScreen customScreen;
+CustomScreen customScreen("Custom Screen");
+SettingsScreen settingsScreen("Settings");
+SettingsScreen speakerSettingsScreen("Advanced Settings");
 
+//==============================================================================
+// CALLBACK FUNCTIONS
+//==============================================================================
 // Example action callback for redirection
-void redirectToCustomScreen() {
+void redirectToCustomScreen()
+{
   menu.redirectToScreen(&customScreen);
 }
 
-void setup() {
-  // Custom drawing for the CustomScreen
-  customScreen.customDraw = []() {
+// Popup demonstration callbacks
+void showInfoPopup()
+{
+  PopupManager::showInfo("This is an information message!", "Info Demo");
+}
+
+void showSuccessPopup()
+{
+  PopupManager::showSuccess("Operation completed successfully!");
+}
+
+void showWarningPopup()
+{
+  PopupManager::showWarning("This action cannot be undone", "Warning!");
+}
+
+void showErrorPopup()
+{
+  PopupManager::showError("Failed to save settings", "Error");
+}
+
+void showQuestionPopup()
+{
+  PopupResult result = PopupManager::showQuestion("Are you sure you want to delete all data?", "Confirm Delete");
+  // Note: Result will be handled in the main loop via PopupManager::update()
+}
+
+void showCustomPopup()
+{
+  PopupConfig config;
+  config.title = "Custom Popup";
+  config.message = "This is a custom popup with auto-close feature enabled. It will close automatically after 5 seconds.";
+  config.type = PopupType::INFO;
+  config.autoClose = true;
+  config.autoCloseDelay = 5000; // 5 seconds
+  config.customColor = 0x7E0;   // Custom green color
+  PopupManager::show(config);
+}
+
+//==============================================================================
+// SETUP
+//==============================================================================
+void setup()
+{
+  // Initialize serial communication
+  Serial.begin(921600);
+  while (!Serial)
+  {
+  }
+  Serial.println("Menu system started.");
+  // Configure custom screen drawing
+  customScreen.customDraw = []()
+  {
     canvas.drawSmoothRoundRect(-15, 50, 40, 0, 50, 50, TFT_BLUE, TFT_BLACK);
     canvas.drawSmoothRoundRect(10, 10, 200, 100, 20, 5, TFT_ORANGE, TFT_BLACK);
     canvas.drawSmoothRoundRect(120, -25, 40, 0, 40, 40, TFT_DARKGREEN, TFT_BLACK);
     canvas.drawString("V" + String(menu.getLibraryVersion()), 10, 10);
+    canvas.setTextColor(TFT_WHITE, TFT_BLACK);
+    canvas.drawString("Press UP for popup demo", 10, 30);
   };
 
-  // Start Serial communication
-  Serial.begin(921600);
-  while (!Serial) {}
-  Serial.println("Menu system started.");
+  // Configure sound settings
+  speakerSettingsScreen.addRangeSetting("Speaker Power", 1, 30, 5, "dB");
+  speakerSettingsScreen.addBooleanSetting("Sound", false);
 
-  // Create a dynamic settings screen
-  SettingsScreen* settingsScreen = new SettingsScreen("Settings");
-  settingsScreen->addBooleanSetting("Enable Feature", true);      // Toggle setting
-  settingsScreen->addRangeSetting("Brightness", 0, 100, 75);      // Brightness slider
-  const char* colorOptions[] = { "Red", "Green", "Blue" };        // Dropdown for colors
-  settingsScreen->addOptionSetting("Color", colorOptions, 3, 0);  // Color options
+  // Configure main settings
+  settingsScreen.addBooleanSetting("Animations", true);                  // Toggle setting
+  settingsScreen.addBooleanSetting("Animations", true);                  // Toggle setting
+  settingsScreen.addBooleanSetting("Optimize Display Updates", true);    // Toggle setting
+  settingsScreen.addRangeSetting("Brightness", 0, 100, 75, "%");         // Range setting
+  settingsScreen.addSubscreenSetting("Speaker", &speakerSettingsScreen); // Subscreen link
 
-  // Add menu items to the main menu
-  mainMenu.addItem("Settings", settingsScreen, nullptr, (const uint16_t*)Menu_icon_1);
-  mainMenu.addItem("Test Menu", &testScreen);
+  // Add style options
+  const char *styleOptions[] = {"Default", "Modern"};
+  settingsScreen.addOptionSetting("Style", styleOptions, 2, 1); // Option setting
+  // Configure main menu
+  mainMenu.addItem("Settings", &settingsScreen, nullptr, (const uint16_t *)Menu_icon_1);
+  mainMenu.addItem(&testScreen);
   mainMenu.addItem("Redirect To Screen", nullptr, redirectToCustomScreen);
-  mainMenu.addItem("Update", nullptr);
-
-  // Add items to the test menu
+  mainMenu.addItem("Info Popup", nullptr, showInfoPopup);
+  mainMenu.addItem("Success Popup", nullptr, showSuccessPopup);
+  mainMenu.addItem("Warning Popup", nullptr, showWarningPopup);
+  mainMenu.addItem("Error Popup", nullptr, showErrorPopup);
+  mainMenu.addItem("Question Popup", nullptr, showQuestionPopup); // With encoder: rotate to select Yes/No, press to confirm
+  mainMenu.addItem("Custom Popup", nullptr, showCustomPopup);
+  // Configure test menu
   testScreen.addItem("First Test Page");
   testScreen.addItem("Second Test Page");
   testScreen.addItem("Third Test Page");
-  testScreen.addItem("Custom Screen", &customScreen);
+  testScreen.addItem("Quick Info Popup", nullptr, showInfoPopup); // Popup from submenu
+  testScreen.addItem(&customScreen);
 
-  // Configure menu style and settings
-  menu.useStylePreset("Rabbit_R1");  // Available presets: "Default", "Rabbit_R1"
-  menu.setScrollbar(true);           // Enable scrollbar
-  menu.setScrollbarStyle(1);         // Styles: 0 (Default), 1 (Modern)
-  // menu.setMenuStyle(1);                     // Styles: 0 (Default), 1 (Modern)
-  // menu.setSelectionBorderColor(0xFFFF);     // Set selection border color
+  // Configure menu appearance and behavior
+  menu.useStylePreset("Rabbit_R1"); // Available presets: "Default", "Rabbit_R1" OR the number of the preset (0, 1, 2, etc.)
+  menu.setScrollbar(true);          // Enable scrollbar
+  menu.setScrollbarStyle(1);        // Styles: 0 (Default), 1 (Modern)
+  menu.setButtonsMode("low");       // Button active voltage: "High" or "Low"
+
+  // Optional configurations
+  // menu.setMenuStyle(1);                     // Styles: 0 (Default), 1 (Modern)  // menu.setSelectionBorderColor(0xFFFF);     // Set selection border color
   // menu.setSelectionFillColor(0x0000);       // Set selection fill color
-  menu.setButtonsMode("High");  // Button active voltage: "High" or "Low"
+  menu.setEncoderPin(5, 2); // Configure encoder pins (also enables encoder support for popups)
+  menu.setSelectPin(19);
+
+  menu.setDisplayRotation(0); // Set display rotation
 
   // Initialize the menu system
-  menu.begin(1, &mainMenu);  // Parameters: display rotation, main menu
+  menu.begin(&mainMenu); // Parameter:  Main menu object
 }
 
-void loop() {
-  menu.loop();  // Handle menu logic
+//==============================================================================
+// MAIN LOOP
+//==============================================================================
+void loop()
+{
+  // Handle popup interactions first
+  PopupResult popupResult = PopupManager::update();
+
+  menu.loop(); // Handle menu logic
+
+  // Handle popup results when user interacts with popup
+  if (popupResult != PopupResult::NONE)
+  {
+    // Handle popup results
+    switch (popupResult)
+    {
+    case PopupResult::OK:
+      Serial.println("User clicked OK/Yes");
+      // Add your OK/Yes handling logic here
+      break;
+    case PopupResult::CANCEL:
+      Serial.println("User clicked Cancel/No");
+      // Add your Cancel/No handling logic here
+      break;
+    default:
+      break;
+    }
+  }
+
+  // Update settings-based configurations
+  menu.setAnimation(settingsScreen.getSettingValue("Animations"));
+  menu.setOptimizeDisplayUpdates(settingsScreen.getSettingValue("Optimize Display Updates"));
+  // menu.setMenuStyle(settingsScreen.getSettingValue("Style"));
 }
