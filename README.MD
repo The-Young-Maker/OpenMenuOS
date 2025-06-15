@@ -2,7 +2,7 @@
 
 ## **What's New in v3.1.0 (2025/06/15)?**
 
-### **Revolutionary PopupManager System**
+### **New PopupManager System**
 - **Professional PopupManager** with 5 distinct popup types: Info, Success, Warning, Error, and Question  
 - **Advanced popup features**: Auto-close functionality for success messages, custom colors, icons, and automatic word wrapping  
 - **Non-blocking operation** with proper button debouncing and input validation  
